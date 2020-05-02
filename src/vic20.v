@@ -28,8 +28,8 @@ module vic20
              );
 
    // PS/2 pull-ups
-   assign usb_fpga_pu_dp = 1'b0;
-   assign usb_fpga_pu_dn = 1'b0;
+   assign usb_fpga_pu_dp = 1;
+   assign usb_fpga_pu_dn = 1;
 
    // Diagnostics
    assign leds = {led8, led7, led6, led5, led4, led3, led2, led1};
@@ -50,7 +50,7 @@ module vic20
      .locked(locked)
    );
 
-   always @(posedge clk25) diag <= 0;
+   always @(posedge clk25) diag <= address;
 
    // ===============================================================
    // Wires/Reg definitions
@@ -132,6 +132,19 @@ module vic20
    // ===============================================================
    // Keyboard
    // ===============================================================
+
+   wire [4:0]  key_data;
+   wire [11:1] Fn;
+   wire [2:0]  mod;
+   wire [10:0] ps2_key;
+
+   // Get PS/2 keyboard events
+   ps2 ps2_kbd (
+      .clk(clk25),
+      .ps2_clk(ps2_clk),
+      .ps2_data(ps2_data),
+      .ps2_key(ps2_key)
+   );
 
    // ===============================================================
    // LEDs
