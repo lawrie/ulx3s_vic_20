@@ -51,7 +51,7 @@
 // -----------------------------------------------------------------------
 // no timescale needed
 
-module fpga64_keyboard(
+module keyboard(
 input wire clk,
 input wire [10:0] ps2_key,
 input wire [7:0] pai,

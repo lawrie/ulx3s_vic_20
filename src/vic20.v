@@ -1,31 +1,30 @@
 `default_nettype none
-module vic20
-   (
-             // Main clock, 25MHz
-             input         clk25_mhz,
-	     // Buttons
-	     input [6:0]   btn,
-             // Keyboard
-	     output        usb_fpga_pu_dp,
-             output        usb_fpga_pu_dn,
-             input         ps2_clk,
-             input         ps2_data,
-             // Video
-             output [3:0]  red,
-             output [3:0]  green,
-             output [3:0]  blue,
-             output        hsync,
-             output        vsync,
-	     // HDMI
-	     output [3:0]  gpdi_dp, 
-             output [3:0]  gpdi_dn,
-	     // Audio
-	     output  [3:0] audio_l, 
-             output  [3:0] audio_r,
-	     // Leds
-	     output [7:0]  leds,
-	     output reg [15:0] diag
-             );
+module vic20 (
+  // Main clock, 25MHz
+  input         clk25_mhz,
+  // Buttons
+  input [6:0]   btn,
+  // Keyboard
+  output        usb_fpga_pu_dp,
+  output        usb_fpga_pu_dn,
+  input         ps2_clk,
+  input         ps2_data,
+  // Video
+  output [3:0]  red,
+  output [3:0]  green,
+  output [3:0]  blue,
+  output        hsync,
+  output        vsync,
+  // HDMI
+  output [3:0]  gpdi_dp, 
+  output [3:0]  gpdi_dn,
+  // Audio
+  output  [3:0] audio_l, 
+  output  [3:0] audio_r,
+  // Leds
+  output [7:0]  leds,
+  output reg [15:0] diag
+);
 
    // PS/2 pull-ups
    assign usb_fpga_pu_dp = 1;
@@ -34,10 +33,6 @@ module vic20
    // Diagnostics
    assign leds = {led8, led7, led6, led5, led4, led3, led2, led1};
    
-   // ===============================================================
-   // Parameters
-   // ===============================================================
-
    // ===============================================================
    // System Clock generation (25MHz)
    // ===============================================================
@@ -64,11 +59,10 @@ module vic20
    reg         cpu_clken;
    reg         cpu_clken1;
    reg         rnw;
-   wire        via1_cs;
-   wire        via2_cs;
    reg         via1_clken;
    reg         via4_clken;
    wire [1:0]  turbo;
+   wire [3:0]  io_cs_n;
 
    // ===============================================================
    // VGA Clock generation (25MHz/12.5MHz)
@@ -137,6 +131,15 @@ module vic20
    wire [11:1] Fn;
    wire [2:0]  mod;
    wire [10:0] ps2_key;
+   wire [7:0]  kbd_col_out;
+   wire [7:0]  kbd_col_out_oe_n;
+   wire [7:0]  kbd_col_out_s = kbd_col_out | kbd_col_out_oe_n;
+   wire [7:0]  kbd_col_in;
+   wire [7:0]  kbd_row_out;
+   wire [7:0]  kbd_row_in;
+   wire [7:0]  kbd_row_out_s;
+   wire        reset_key;
+   wire        kbd_restore;
 
    // Get PS/2 keyboard events
    ps2 ps2_kbd (
@@ -144,6 +147,18 @@ module vic20
       .ps2_clk(ps2_clk),
       .ps2_data(ps2_data),
       .ps2_key(ps2_key)
+   );
+
+   keyboard kbd (
+     .clk(clk25),
+     .ps2_key(ps2_key),
+     .pbi({kbd_col_out_s[3], kbd_col_out_s[6:4], kbd_col_out_s[7], kbd_col_out_s[2:0]}),
+     .pbo(kbd_col_in),
+     .pai({kbd_row_out_s[0], kbd_row_out_s[6:1], kbd_row_out_s[7]}),
+     .pao(kbd_row_in),
+     .reset_key(reset_key),
+     .restore_key(kbd_restore),
+    . backwardsReadingEnabled(1'b1)
    );
 
    // ===============================================================
@@ -212,6 +227,26 @@ module vic20
    // Address decoding logic and data in multiplexor
    // ===============================================================
 
+   always @(*) begin
+     io_cs_n <= "1111";
+
+     if (address[15:13]  == 3'b100) begin //  blk4
+       case (address[12:10])
+         3'b000 : io_cs_n <= 4'b1111;
+         3'b001 : io_cs_n <= 4'b1111;
+         3'b010 : io_cs_n <= 4'b1111;
+         3'b011 : io_cs_n <= 4'b1111;
+         3'b100 : io_cs_n <= 4'b1110; // VIAs
+         3'b101 : io_cs_n <= 4'b1101; // colour RAM
+         3'b110 : io_cs_n <= 4'b1011;
+         3'b111 : io_cs_n <= 4'b0111;
+       endcase
+     end
+   end
+
+   // ===============================================================
+   // RAM
+   // ===============================================================
    wire [7:0] ram_dout;
 
    dpram #(
@@ -242,8 +277,8 @@ module vic20
       .O_DATA(via1_dout),
       .O_DATA_OE_L(),
       .I_RW_L(rnw),
-      .I_CS1(via1_cs),
-      .I_CS2_L(1'b0),
+      .I_CS1(address[4]),
+      .I_CS2_L(io_cs_n[0]),
       .O_IRQ_L(via1_irq_n),
       .I_CA1(1'b0),
       .I_CA2(1'b0),
@@ -274,8 +309,8 @@ module vic20
       .O_DATA(via2_dout),
       .O_DATA_OE_L(),
       .I_RW_L(rnw),
-      .I_CS1(via2_cs),
-      .I_CS2_L(1'b0),
+      .I_CS1(address[5]),
+      .I_CS2_L(io_cs_n[0]),
       .O_IRQ_L(via2_irq_n),
       .I_CA1(1'b0),
       .I_CA2(1'b0),
@@ -291,8 +326,8 @@ module vic20
       .O_CB2(),
       .O_CB2_OE_L(),
       .I_PB(8'b0),
-      .O_PB(),
-      .O_PB_OE_L(),
+      .O_PB(kbd_col_out),
+      .O_PB_OE_L(kbd_col_out_oe_n),
       .I_P2_H(via1_clken),
       .RESET_L(!reset),
       .ENA_4(via4_clken),
