@@ -169,7 +169,9 @@ module vic20
 
    wire [7:0] ram_dout;
 
-   dpram ram64(
+   dpram #(
+     .MEM_INIT_FILE("../roms/vic20.mem")
+   )ram64(
      .clk_a(clk25),
      .we_a(!rnw),
      .addr_a(address),
