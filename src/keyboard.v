@@ -138,6 +138,12 @@ reg key_commodore = 1'b0;
 reg key_Q = 1'b0;
 reg key_runstop = 1'b0;  // for joystick emulation on PS2
 reg old_state;
+reg key_F1;
+reg key_F3;
+reg key_F5;
+reg key_F7;
+reg key_Return;
+reg key_shiftL;
 
   assign pressed = ps2_key[9];
   always @(posedge clk) begin
