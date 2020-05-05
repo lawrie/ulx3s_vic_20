@@ -45,7 +45,7 @@ module vic20 (
      .locked(locked)
    );
 
-   always @(posedge clk25) diag <= address;
+   always @(posedge clk25) if (vga_addr == 16'h8151) diag <= vid_out;
 
    // ===============================================================
    // Wires/Reg definitions
@@ -251,6 +251,9 @@ module vic20 (
    // ===============================================================
    wire [7:0] ram_dout;
 
+   wire [15:0] vga_addr;
+   wire [7:0] vid_out;
+
    dpram #(
      .MEM_INIT_FILE("../roms/vic20.mem")
    )ram64(
@@ -258,7 +261,10 @@ module vic20 (
      .we_a(!rnw),
      .addr_a(address),
      .din_a(cpu_dout),
-     .dout_a(ram_dout)
+     .dout_a(ram_dout),
+     .clk_b(clk_vga),
+     .addr_b(vga_addr),
+     .dout_b(vid_out)
    );
 
    assign cpu_din = ram_dout;
@@ -340,9 +346,6 @@ module vic20 (
    // VGA
    // ===============================================================
    wire vga_de;
-
-   wire [15:0] vga_addr;
-   wire [7:0] vid_out;
 
    video vga (
      .clk(clk_vga),
