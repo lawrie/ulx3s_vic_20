@@ -62,13 +62,14 @@ module vic20 (
    reg         via1_clken;
    reg         via4_clken;
    wire [1:0]  turbo;
-   wire [3:0]  io_cs_n;
-
+   reg  [3:0]  io_cs_n;
+   wire        p2_h;
+   wire [7:0]  v_data;
+       
    // ===============================================================
    // VGA Clock generation (25MHz/12.5MHz)
    // ===============================================================
 
-   wire vga_blank;
    wire clk_vga = clk25;
 
    // ===============================================================
@@ -136,6 +137,7 @@ module vic20 (
    wire [7:0]  kbd_col_out_s = kbd_col_out | kbd_col_out_oe_n;
    wire [7:0]  kbd_col_in;
    wire [7:0]  kbd_row_out;
+   wire [7:0]  kbd_row_out_oe_n;
    wire [7:0]  kbd_row_in;
    wire [7:0]  kbd_row_out_s;
    wire        reset_key;
@@ -273,7 +275,7 @@ module vic20 (
    m6522 VIA1
      (
       .I_RS(address[3:0]),
-      .I_DATA(cpu_dout),
+      .I_DATA(v_data),
       .O_DATA(via1_dout),
       .O_DATA_OE_L(),
       .I_RW_L(rnw),
@@ -305,7 +307,7 @@ module vic20 (
    m6522 VIA2
      (
       .I_RS(address[3:0]),
-      .I_DATA(cpu_dout),
+      .I_DATA(v_data),
       .O_DATA(via2_dout),
       .O_DATA_OE_L(),
       .I_RW_L(rnw),
@@ -316,22 +318,42 @@ module vic20 (
       .I_CA2(1'b0),
       .O_CA2(),
       .O_CA2_OE_L(),
-      .I_PA(8'b0),
-      .O_PA(),
-      .O_PA_OE_L(),
+      .I_PA({kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}),
+      .O_PA(kbd_row_out),
+      .O_PA_OE_L(kbd_row_out_oe_n),
       .I_CB1(1'b0),
       .O_CB1(),
       .O_CB1_OE_L(),
       .I_CB2(1'b0),
       .O_CB2(),
       .O_CB2_OE_L(),
-      .I_PB(8'b0),
+      .I_PB({kbd_col_in[3], kbd_col_in[6:4], kbd_col_in[7], kbd_col_in[2:0]}),
       .O_PB(kbd_col_out),
       .O_PB_OE_L(kbd_col_out_oe_n),
-      .I_P2_H(via1_clken),
+      .I_P2_H(p2_h),
       .RESET_L(!reset),
       .ENA_4(via4_clken),
       .CLK(clk25)
+   );
+
+   // ===============================================================
+   // VGA
+   // ===============================================================
+   wire vga_de;
+
+   wire [15:0] vga_addr;
+   wire [7:0] vid_out;
+
+   video vga (
+     .clk(clk_vga),
+     .vga_r(red),
+     .vga_g(green),
+     .vga_b(blue),
+     .vga_de(vga_de),
+     .vga_hs(hsync),
+     .vga_vs(vsync),
+     .vga_addr(vga_addr),
+     .vga_data(vid_out)
    );
 
    // Convert VGA to HDMI
@@ -341,7 +363,7 @@ module vic20 (
      .red({red, 4'b0}),
      .green({green, 4'b0}),
      .blue({blue, 4'b0}),
-     .vde(!vga_blank),
+     .vde(vga_de),
      .hSync(hsync),
      .vSync(vsync),
      .gpdi_dp(gpdi_dp),

@@ -1,6 +1,6 @@
 VERILOG = ../src/vic20.v ../src/cpu.v ../src/ALU.v \
 	  ../src/keyboard.v ../src/ps2.v ../src/dpram.v \
-	  ../src/m6522.v ../src/hdmi.v pll.v 
+	  ../src/m6522.v ../src/video.v ../src/hdmi.v pll.v 
 
 PIN_DEF = ulx3s_v20.lpf
 
