@@ -52,15 +52,15 @@
 // no timescale needed
 
 module keyboard(
-input wire clk,
-input wire [10:0] ps2_key,
-input wire [7:0] pai,
-input wire [7:0] pbi,
-output reg [7:0] pao,
-output reg [7:0] pbo,
-output reg reset_key,
-output reg restore_key,
-input wire backwardsReadingEnabled
+  input wire clk,
+  input wire [10:0] ps2_key,
+  input wire [7:0] pai,
+  input wire [7:0] pbi,
+  output reg [7:0] pao,
+  output reg [7:0] pbo,
+  output reg reset_key,
+  output reg restore_key,
+  input wire backwardsReadingEnabled
 );
 
 // Config
@@ -69,14 +69,15 @@ input wire backwardsReadingEnabled
 // set to 0 to save some hardware.
 
 wire pressed;
+
 reg key_del = 1'b0;
-wire key_return = 1'b0;
+reg key_return = 1'b0;
 reg key_left = 1'b0;
 reg key_right = 1'b0;
-wire key_f7 = 1'b0;
-wire key_f1 = 1'b0;
-wire key_f3 = 1'b0;
-wire key_f5 = 1'b0;
+reg key_f7 = 1'b0;
+reg key_f1 = 1'b0;
+reg key_f3 = 1'b0;
+reg key_f5 = 1'b0;
 reg key_up = 1'b0;
 reg key_down = 1'b0;
 reg key_3 = 1'b0;
@@ -139,7 +140,6 @@ reg key_F1;
 reg key_F3;
 reg key_F5;
 reg key_F7;
-reg key_Return;
 
   assign pressed = ~ps2_key[9];
 
@@ -180,78 +180,78 @@ reg key_Return;
 
     if(ps2_key[10]) begin
       case(ps2_key[7:0])
-      8'h01 : key_pound <= pressed;
-      8'h03 : key_F5 <= pressed;
-      8'h04 : key_F3 <= pressed;
-      8'h05 : key_F1 <= pressed; //when X"06" => -- F2
-      8'h09 : key_plus <= pressed;
-      8'h0C : restore_key <= pressed; // F4
-      8'h83 : key_F7 <= pressed;
-      8'h0E : key_arrowleft <= pressed;
-      8'h11 : key_commodore <= pressed;
-      8'h12 : key_shiftl <= pressed; 
-      8'h14 : key_ctrl <= pressed; 
-      8'h15 : key_Q <= pressed;
-      8'h16 : key_1 <= pressed;
-      8'h1A : key_Z <= pressed;
-      8'h1B : key_S <= pressed;
-      8'h1C : key_A <= pressed;
-      8'h1D : key_W <= pressed;
-      8'h1E : key_2 <= pressed;
-      8'h21 : key_C <= pressed;
-      8'h22 : key_X <= pressed;
-      8'h23 : key_D <= pressed;
-      8'h24 : key_E <= pressed;
-      8'h25 : key_4 <= pressed;
-      8'h26 : key_3 <= pressed;
-      8'h29 : key_space <= pressed;
-      8'h2A : key_V <= pressed;
-      8'h2B : key_F <= pressed;
-      8'h2C : key_T <= pressed;
-      8'h2D : key_R <= pressed;
-      8'h2E : key_5 <= pressed;
-      8'h31 : key_N <= pressed;
-      8'h32 : key_B <= pressed;
-      8'h33 : key_H <= pressed;
-      8'h34 : key_G <= pressed;
-      8'h35 : key_Y <= pressed;
-      8'h36 : key_6 <= pressed;
-      8'h3A : key_M <= pressed;
-      8'h3B : key_J <= pressed;
-      8'h3C : key_U <= pressed;
-      8'h3D : key_7 <= pressed;
-      8'h3E : key_8 <= pressed;
-      8'h41 : key_comma <= pressed;
-      8'h42 : key_K <= pressed;
-      8'h43 : key_I <= pressed;
-      8'h44 : key_O <= pressed;
-      8'h45 : key_0 <= pressed;
-      8'h46 : key_9 <= pressed;
-      8'h49 : key_dot <= pressed;
-      8'h4A : key_slash <= pressed;
-      8'h4B : key_L <= pressed;
-      8'h4C : key_colon <= pressed;
-      8'h4D : key_P <= pressed;
-      8'h4E : key_minus <= pressed;
-      8'h52 : key_semicolon <= pressed;
-      8'h54 : key_at <= pressed;
-      8'h55 : key_equal <= pressed;
-      8'h59 : key_shiftr <= pressed;
-      8'h5A : key_Return <= pressed;
-      8'h5B : key_star <= pressed;
-      8'h5D : key_arrowup <= pressed;
-      8'h6B : key_left <= pressed;
-      8'h6C : key_home <= pressed;
-      8'h66 : key_del <= pressed;
-      8'h72 : key_down <= pressed;
-      8'h74 : key_right <= pressed;
-      8'h75 : key_up <= pressed;
-      8'h76 : key_runstop <= pressed;
-      8'h78 : begin // F11
-                if(key_ctrl == 1'b1) begin
-                  reset_key <= pressed;
+        8'h01 : key_pound <= pressed;
+        8'h03 : key_F5 <= pressed;
+        8'h04 : key_F3 <= pressed;
+        8'h05 : key_F1 <= pressed; //when X"06" => -- F2
+        8'h09 : key_plus <= pressed;
+        8'h0C : restore_key <= pressed; // F4
+        8'h83 : key_F7 <= pressed;
+        8'h0E : key_arrowleft <= pressed;
+        8'h11 : key_commodore <= pressed;
+        8'h12 : key_shiftl <= pressed; 
+        8'h14 : key_ctrl <= pressed; 
+        8'h15 : key_Q <= pressed;
+        8'h16 : key_1 <= pressed;
+        8'h1A : key_Z <= pressed;
+        8'h1B : key_S <= pressed;
+        8'h1C : key_A <= pressed;
+        8'h1D : key_W <= pressed;
+        8'h1E : key_2 <= pressed;
+        8'h21 : key_C <= pressed;
+        8'h22 : key_X <= pressed;
+        8'h23 : key_D <= pressed;
+        8'h24 : key_E <= pressed;
+        8'h25 : key_4 <= pressed;
+        8'h26 : key_3 <= pressed;
+        8'h29 : key_space <= pressed;
+        8'h2A : key_V <= pressed;
+        8'h2B : key_F <= pressed;
+        8'h2C : key_T <= pressed;
+        8'h2D : key_R <= pressed;
+        8'h2E : key_5 <= pressed;
+        8'h31 : key_N <= pressed;
+        8'h32 : key_B <= pressed;
+        8'h33 : key_H <= pressed;
+        8'h34 : key_G <= pressed;
+        8'h35 : key_Y <= pressed;
+        8'h36 : key_6 <= pressed;
+        8'h3A : key_M <= pressed;
+        8'h3B : key_J <= pressed;
+        8'h3C : key_U <= pressed;
+        8'h3D : key_7 <= pressed;
+        8'h3E : key_8 <= pressed;
+        8'h41 : key_comma <= pressed;
+        8'h42 : key_K <= pressed;
+        8'h43 : key_I <= pressed;
+        8'h44 : key_O <= pressed;
+        8'h45 : key_0 <= pressed;
+        8'h46 : key_9 <= pressed;
+        8'h49 : key_dot <= pressed;
+        8'h4A : key_slash <= pressed;
+        8'h4B : key_L <= pressed;
+        8'h4C : key_colon <= pressed;
+        8'h4D : key_P <= pressed;
+        8'h4E : key_minus <= pressed;
+        8'h52 : key_semicolon <= pressed;
+        8'h54 : key_at <= pressed;
+        8'h55 : key_equal <= pressed;
+        8'h59 : key_shiftr <= pressed;
+        8'h5A : key_return <= pressed;
+        8'h5B : key_star <= pressed;
+        8'h5D : key_arrowup <= pressed;
+        8'h6B : key_left <= pressed;
+        8'h6C : key_home <= pressed;
+        8'h66 : key_del <= pressed;
+        8'h72 : key_down <= pressed;
+        8'h74 : key_right <= pressed;
+        8'h75 : key_up <= pressed;
+        8'h76 : key_runstop <= pressed;
+        8'h78 : begin // F11
+                  if(key_ctrl == 1'b1) begin
+                    reset_key <= pressed;
+                  end
                 end
-              end
       endcase
     end
   end
