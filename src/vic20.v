@@ -45,7 +45,7 @@ module vic20 (
      .locked(locked)
    );
 
-   always @(posedge clk25) if (vga_addr == 16'h8151) diag <= vid_out;
+   always @(posedge clk25) diag <= {kbd_col_in, kbd_row_in};
 
    // ===============================================================
    // Wires/Reg definitions
@@ -61,10 +61,10 @@ module vic20 (
    reg         rnw;
    reg         via1_clken;
    reg         via4_clken;
-   wire [1:0]  turbo;
+   wire [1:0]  turbo = 0;
    reg  [3:0]  io_cs_n;
    wire        p2_h;
-   wire [7:0]  v_data;
+   wire [7:0]  v_data = cpu_dout;
        
    // ===============================================================
    // VGA Clock generation (25MHz/12.5MHz)
@@ -122,15 +122,12 @@ module vic20 (
           end
      end
 
-   wire reset = !hard_reset_n | !btn[0];
+   wire reset = reset_key | !hard_reset_n | !btn[0];
 
    // ===============================================================
    // Keyboard
    // ===============================================================
 
-   wire [4:0]  key_data;
-   wire [11:1] Fn;
-   wire [2:0]  mod;
    wire [10:0] ps2_key;
    wire [7:0]  kbd_col_out;
    wire [7:0]  kbd_col_out_oe_n;
@@ -139,7 +136,7 @@ module vic20 (
    wire [7:0]  kbd_row_out;
    wire [7:0]  kbd_row_out_oe_n;
    wire [7:0]  kbd_row_in;
-   wire [7:0]  kbd_row_out_s;
+   wire [7:0]  kbd_row_out_s = kbd_row_out | kbd_row_out_oe_n;
    wire        reset_key;
    wire        kbd_restore;
 
@@ -178,14 +175,14 @@ module vic20 (
 
    always @(posedge clk25)
      begin
-        led1 <= 0;  // red     - indicates alt colour set active
-        led2 <= 0;        // yellow  - indicates SD card activity
-        led3 <= 0;       // green   - indicates rept key pressed
-        led4 <= reset;      // blue    - indicates reset active
-	led5 <= 0;
-	led6 <= 0;
-	led7 <= 0;
-	led8 <= 0;
+        led1 <= !via2_irq_n;  // red 
+        led2 <= !via1_nmi_n;  // yellow 
+        led3 <= reset_key;    // green
+        led4 <= reset;        // blue
+	led5 <= kbd_restore;  // red
+	led6 <= 0;            // yellow
+	led7 <= 0;            // green
+	led8 <= 0;            // blue
      end
 
    assign audio_l = 0;
@@ -210,7 +207,7 @@ module vic20 (
       .DO(cpu_dout_c),
       .WE(rnw_c),
       .IRQ(!via2_irq_n),
-      .NMI(1'b0),
+      .NMI(!via1_nmi_n),
       .RDY(cpu_clken)
       );
 
@@ -267,16 +264,20 @@ module vic20 (
      .dout_b(vid_out)
    );
 
-   assign cpu_din = ram_dout;
+   assign cpu_din = !io_cs_n[0] && address[4] ? via1_dout :
+                    !io_cs_n[0] && address[5] ? via2_dout 
+                                              : ram_dout;
 
    // ===============================================================
    // 6522 VIAs
    // ===============================================================
 
    wire [7:0] via1_dout;
-   wire via1_irq_n;
+   wire via1_nmi_n;
    wire [7:0] via2_dout;
    wire via2_irq_n;
+   wire [7:0] via1_pa_in;
+   wire [7:0] via1_pa_out;
 
    m6522 VIA1
      (
@@ -287,13 +288,13 @@ module vic20 (
       .I_RW_L(rnw),
       .I_CS1(address[4]),
       .I_CS2_L(io_cs_n[0]),
-      .O_IRQ_L(via1_irq_n),
-      .I_CA1(1'b0),
+      .O_IRQ_L(via1_nmi_n),
+      .I_CA1(kbd_restore),
       .I_CA2(1'b0),
       .O_CA2(),
       .O_CA2_OE_L(),
-      .I_PA(8'b0),
-      .O_PA(),
+      .I_PA(via1_pa_in),
+      .O_PA(via1_pa_out),
       .O_PA_OE_L(),
       .I_CB1(1'b0),
       .O_CB1(),
@@ -336,7 +337,7 @@ module vic20 (
       .I_PB({kbd_col_in[3], kbd_col_in[6:4], kbd_col_in[7], kbd_col_in[2:0]}),
       .O_PB(kbd_col_out),
       .O_PB_OE_L(kbd_col_out_oe_n),
-      .I_P2_H(p2_h),
+      .I_P2_H(via1_clken),
       .RESET_L(!reset),
       .ENA_4(via4_clken),
       .CLK(clk25)
