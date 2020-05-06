@@ -45,7 +45,7 @@ module vic20 (
      .locked(locked)
    );
 
-   always @(posedge clk25) diag <= {kbd_col_in, kbd_row_in};
+   always @(posedge clk25) if (io_cs_n[1] && address[5] && rnw && !(&kbd_row_in)) diag <= {last_col_out, kbd_row_in};
 
    // ===============================================================
    // Wires/Reg definitions
@@ -151,9 +151,11 @@ module vic20 (
    keyboard kbd (
      .clk(clk25),
      .ps2_key(ps2_key),
-     .pbi({kbd_col_out_s[3], kbd_col_out_s[6:4], kbd_col_out_s[7], kbd_col_out_s[2:0]}),
+     .pbi({last_col_out[3], last_col_out[6:4], last_col_out[7], last_col_out[2:0]}),
+     //.pbi({kbd_col_out_s[3], kbd_col_out_s[6:4], kbd_col_out_s[7], kbd_col_out_s[2:0]}),
      .pbo(kbd_col_in),
-     .pai({kbd_row_out_s[0], kbd_row_out_s[6:1], kbd_row_out_s[7]}),
+     //.pai({kbd_row_out_s[0], kbd_row_out_s[6:1], kbd_row_out_s[7]}),
+     .pai(8'b11111111),
      .pao(kbd_row_in),
      .reset_key(reset_key),
      .restore_key(kbd_restore),
@@ -226,7 +228,7 @@ module vic20 (
    // Address decoding logic and data in multiplexor
    // ===============================================================
 
-   always @(*) begin
+   always @(posedge clk25) begin
      io_cs_n <= "1111";
 
      if (address[15:13]  == 3'b100) begin //  blk4
@@ -264,8 +266,11 @@ module vic20 (
      .dout_b(vid_out)
    );
 
+   reg [7:0] last_col_out;
+   always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
+
    assign cpu_din = !io_cs_n[0] && address[4] ? via1_dout :
-                    !io_cs_n[0] && address[5] ? via2_dout 
+                    address == 16'h9121 && rnw ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]} 
                                               : ram_dout;
 
    // ===============================================================

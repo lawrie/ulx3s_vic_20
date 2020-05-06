@@ -136,10 +136,10 @@ reg key_space = 1'b0;
 reg key_commodore = 1'b0;
 reg key_Q = 1'b0;
 reg key_runstop = 1'b0;  // for joystick emulation on PS2
-reg key_F1;
-reg key_F3;
-reg key_F5;
-reg key_F7;
+reg key_F1 = 1'b0;
+reg key_F3 = 1'b0;
+reg key_F5 = 1'b0;
+reg key_F7 = 1'b0;
 
   assign pressed = ~ps2_key[9];
 
