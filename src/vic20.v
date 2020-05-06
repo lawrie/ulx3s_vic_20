@@ -21,10 +21,25 @@ module vic20 (
   // Audio
   output  [3:0] audio_l, 
   output  [3:0] audio_r,
+  // ESP32 passthru
+  input         ftdi_txd,
+  output        ftdi_rxd,
+  input         wifi_txd,
+  output        wifi_rxd,  // SPI from ESP32
+  // SPI control
+  input         wifi_gpio16,
+  input         wifi_gpio5,
+  output        wifi_gpio0,
+  inout         sd_clk, sd_cmd,
+  inout   [3:0] sd_d,
   // Leds
   output [7:0]  leds,
   output reg [15:0] diag
 );
+
+   // passthru to ESP32 micropython serial console
+   assign wifi_rxd = ftdi_txd;
+   assign ftdi_rxd = wifi_txd;
 
    // PS/2 pull-ups
    assign usb_fpga_pu_dp = 1;
@@ -365,16 +380,39 @@ module vic20 (
      .vga_data(vid_out)
    );
 
+   wire [7:0] osd_vga_r, osd_vga_g, osd_vga_b;
+   wire osd_vga_hsync, osd_vga_vsync, osd_vga_blank;
+   spi_osd
+   #(
+     .c_start_x(62), .c_start_y(80),
+     .c_chars_x(64), .c_chars_y(20),
+     .c_init_on(1),
+     .c_char_file("osd.mem"),
+     .c_font_file("font_bizcat8x16.mem")
+   )
+   spi_osd_inst
+   (
+     .clk_pixel(clk_vga), .clk_pixel_ena(1),
+     .i_r({red,   {4{red[0]}}   }),
+     .i_g({green, {4{green[0]}} }),
+     .i_b({blue,  {4{blue[0]}}  }),
+     .i_hsync(~hsync), .i_vsync(~vsync), .i_blank(~vga_de),
+     .i_csn(~wifi_gpio5), .i_sclk(wifi_gpio16), .i_mosi(sd_d[1]), // .o_miso(),
+     .o_r(osd_vga_r), .o_g(osd_vga_g), .o_b(osd_vga_b),
+     .o_hsync(osd_vga_hsync), .o_vsync(osd_vga_vsync), .o_blank(osd_vga_blank)
+   );
+
+
    // Convert VGA to HDMI
    HDMI_out vga2dvid (
      .pixclk(clk_vga),
      .pixclk_x5(clk_dvi),
-     .red({red, 4'b0}),
-     .green({green, 4'b0}),
-     .blue({blue, 4'b0}),
-     .vde(vga_de),
-     .hSync(hsync),
-     .vSync(vsync),
+     .red(osd_vga_r),
+     .green(osd_vga_g),
+     .blue(osd_vga_b),
+     .vde(~osd_vga_blank),
+     .hSync(~osd_vga_hsync),
+     .vSync(~osd_vga_vsync),
      .gpdi_dp(gpdi_dp),
      .gpdi_dn(gpdi_dn)
    );
