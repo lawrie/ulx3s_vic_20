@@ -80,6 +80,7 @@ module vic20 (
    reg  [3:0]  io_cs_n;
    wire        p2_h;
    wire [7:0]  v_data = cpu_dout;
+   wire [7:0]  ram_dout;
        
    // ===============================================================
    // VGA Clock generation (25MHz/12.5MHz)
@@ -88,8 +89,59 @@ module vic20 (
    wire clk_vga = clk25;
 
    // ===============================================================
+   // Joystick for OSD control and games
+   // ===============================================================
+
+   wire [6:0] R_btn_joy;
+   always @(posedge clk25)
+     R_btn_joy <= btn;
+     //R_btn_joy <= btn | { usb_buttons[7],usb_buttons[6],usb_buttons[5],usb_buttons[4],usb_buttons[0],usb_buttons[1],1'b0};
+
+   // ===============================================================
+   // SPI Slave for RAM and CPU control
+   // ===============================================================
+  
+   wire        spi_ram_wr, spi_ram_rd;
+   wire [31:0] spi_ram_addr;
+   wire  [7:0] spi_ram_di;
+   wire  [7:0] spi_ram_do = ram_dout;
+
+   assign sd_d[3] = 1'bz; // FPGA pin pullup sets SD card inactive at SPI bus
+
+   wire irq;
+   spi_ram_btn
+   #(
+     .c_sclk_capable_pin(1'b0),
+     .c_addr_bits(32)
+   )
+   spi_ram_btn_inst
+   (
+     .clk(clk25),
+     .csn(~wifi_gpio5),
+     .sclk(wifi_gpio16),
+     .mosi(sd_d[1]), // wifi_gpio4
+     .miso(sd_d[2]), // wifi_gpio12
+     .btn(R_btn_joy),
+     .irq(irq),
+     .wr(spi_ram_wr),
+     .rd(spi_ram_rd),
+     .addr(spi_ram_addr),
+     .data_in(spi_ram_do),
+     .data_out(spi_ram_di)
+   );
+   assign wifi_gpio0 = ~irq;
+
+   reg [7:0] R_cpu_control;
+   always @(posedge clk25) begin
+     if (spi_ram_wr && spi_ram_addr[31:24] == 8'hFF) begin
+       R_cpu_control <= spi_ram_di;
+     end
+   end
+
+   // ===============================================================
    // Clock Enable Generation
    // ===============================================================
+
    reg [4:0] clkdiv = 5'b00000;  // divider, from 25MHz down to 1, 2, 4 or 8MHz
 
    always @(posedge clk25) begin
@@ -100,19 +152,19 @@ module vic20 (
       case (turbo)
         2'b00: // 1MHz
           begin
-             cpu_clken  <= (clkdiv[3:0] == 0) & (clkdiv[4] == 0);
+             cpu_clken  <= (clkdiv[3:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
              via1_clken <= (clkdiv[3:0] == 0) & (clkdiv[4] == 0);
              via4_clken <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0);
           end
         2'b01: // 2MHz
           begin
-             cpu_clken  <= (clkdiv[2:0] == 0) & (clkdiv[4] == 0);
+             cpu_clken  <= (clkdiv[2:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
              via1_clken <= (clkdiv[2:0] == 0) & (clkdiv[4] == 0);
              via4_clken <= (clkdiv[0]   == 0) & (clkdiv[4] == 0);
           end
         default: // 4MHz
           begin
-             cpu_clken  <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0);
+             cpu_clken  <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
              via1_clken <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0);
              via4_clken <=                      (clkdiv[4] == 0);
           end
@@ -137,7 +189,7 @@ module vic20 (
           end
      end
 
-   wire reset = reset_key | !hard_reset_n | !btn[0];
+   wire reset = reset_key | !hard_reset_n | !btn[0] | R_cpu_control[0];
 
    // ===============================================================
    // Keyboard
@@ -263,7 +315,6 @@ module vic20 (
    // ===============================================================
    // RAM
    // ===============================================================
-   wire [7:0] ram_dout;
 
    wire [15:0] vga_addr;
    wire [7:0] vid_out;
@@ -272,9 +323,9 @@ module vic20 (
      .MEM_INIT_FILE("../roms/vic20.mem")
    )ram64(
      .clk_a(clk25),
-     .we_a(!rnw),
-     .addr_a(address),
-     .din_a(cpu_dout),
+     .we_a(R_cpu_control[1] ? spi_ram_wr && spi_ram_addr[31:24] == 8'h00 : !rnw),
+     .addr_a(R_cpu_control[1] ? spi_ram_addr[15:0] : address),
+     .din_a(R_cpu_control[1] ? spi_ram_di : cpu_dout),
      .dout_a(ram_dout),
      .clk_b(clk_vga),
      .addr_b(vga_addr),
@@ -379,6 +430,10 @@ module vic20 (
      .vga_addr(vga_addr),
      .vga_data(vid_out)
    );
+
+   // ===============================================================
+   // SPI Slave for OSD display
+   // ===============================================================
 
    wire [7:0] osd_vga_r, osd_vga_g, osd_vga_b;
    wire osd_vga_hsync, osd_vga_vsync, osd_vga_blank;
