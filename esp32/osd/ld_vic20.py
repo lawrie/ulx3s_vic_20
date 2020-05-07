@@ -106,7 +106,6 @@ class ld_vic20:
     Y=header[6]
     S=header[7]
     PC=unpack("<H",header[8:10])[0]
-    PC=0xFD22
     P=header[10]
     self.regs=bytearray([A,X,Y,P,S,header[8],header[9]])
     print("A=0x%02X X=0x%02X Y=0x%02X S=0x%02X PC=0x%04X P=0x%02X" % (A,X,Y,S,PC,P))
