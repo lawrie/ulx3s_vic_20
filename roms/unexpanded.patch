@@ -1,0 +1,37 @@
+iff --git a/roms/vic20.mem b/roms/vic20.mem
+index 9034307..7231978 100644
+--- a/roms/vic20.mem
++++ b/roms/vic20.mem
+@@ -64938,7 +64938,7 @@ c1
+ 02
+ a8
+ a9
+-04
++10
+ 85
+ c2
+ e6
+@@ -64966,8 +64966,8 @@ c0
+ 25
+ c0
+ 21
+-b0
+-08
++ea
++ea
+ a0
+ 1e
+ 8c
+diff --git a/src/video.v b/src/video.v
+index 17baeaa..47f3704 100644
+--- a/src/video.v
++++ b/src/video.v
+@@ -34,7 +34,7 @@ module video (
+   reg [9:0] hc = 0;
+   reg [9:0] vc = 0;
+
+-  reg [15:0] screen_addr = 16'h1000;
++  reg [15:0] screen_addr = 16'h1E00;
+   reg [15:0] color_ram_addr = 16'h9400;
+   reg [15:0] char_rom_addr = 16'h8000;
+
