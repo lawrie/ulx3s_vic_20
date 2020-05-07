@@ -136,10 +136,6 @@ reg key_space = 1'b0;
 reg key_commodore = 1'b0;
 reg key_Q = 1'b0;
 reg key_runstop = 1'b0;  // for joystick emulation on PS2
-reg key_F1 = 1'b0;
-reg key_F3 = 1'b0;
-reg key_F5 = 1'b0;
-reg key_F7 = 1'b0;
 
   assign pressed = ~ps2_key[9];
 
@@ -168,25 +164,25 @@ reg key_F7 = 1'b0;
 
     pbo[2] <= pbi[2] & (pai[0] |  ~(key_left | key_right)) & (pai[1] |  ~key_A) & (pai[2] |  ~key_D) & (pai[3] |  ~key_G) & (pai[4] |  ~key_J) & (pai[5] |  ~key_L) & (pai[6] |  ~key_semicolon) & (pai[7] |  ~key_ctrl);
 
-    pbo[3] <= pbi[3] & (pai[0] |  ~key_F7) & (pai[1] |  ~key_4) & (pai[2] |  ~key_6) & (pai[3] |  ~key_8) & (pai[4] |  ~key_0) & (pai[5] |  ~key_minus) & (pai[6] |  ~key_home) & (pai[7] |  ~key_2);
+    pbo[3] <= pbi[3] & (pai[0] |  ~key_f7) & (pai[1] |  ~key_4) & (pai[2] |  ~key_6) & (pai[3] |  ~key_8) & (pai[4] |  ~key_0) & (pai[5] |  ~key_minus) & (pai[6] |  ~key_home) & (pai[7] |  ~key_2);
 
-    pbo[4] <= pbi[4] & (pai[0] |  ~key_F1) & (pai[1] |  ~key_Z) & (pai[2] |  ~key_C) & (pai[3] |  ~key_B) & (pai[4] |  ~key_M) & (pai[5] |  ~key_dot) & (pai[6] |  ~key_shiftr) & (pai[7] |  ~key_space);
+    pbo[4] <= pbi[4] & (pai[0] |  ~key_f1) & (pai[1] |  ~key_Z) & (pai[2] |  ~key_C) & (pai[3] |  ~key_B) & (pai[4] |  ~key_M) & (pai[5] |  ~key_dot) & (pai[6] |  ~key_shiftr) & (pai[7] |  ~key_space);
 
-    pbo[5] <= pbi[5] & (pai[0] |  ~key_F3) & (pai[1] |  ~key_S) & (pai[2] |  ~key_F) & (pai[3] |  ~key_H) & (pai[4] |  ~key_K) & (pai[5] |  ~key_colon) & (pai[6] |  ~key_equal) & (pai[7] |  ~key_commodore);
+    pbo[5] <= pbi[5] & (pai[0] |  ~key_f3) & (pai[1] |  ~key_S) & (pai[2] |  ~key_F) & (pai[3] |  ~key_H) & (pai[4] |  ~key_K) & (pai[5] |  ~key_colon) & (pai[6] |  ~key_equal) & (pai[7] |  ~key_commodore);
 
-    pbo[6] <= pbi[6] & (pai[0] |  ~key_F5) & (pai[1] |  ~key_E) & (pai[2] |  ~key_T) & (pai[3] |  ~key_U) & (pai[4] |  ~key_O) & (pai[5] |  ~key_at) & (pai[6] |  ~key_arrowup) & (pai[7] |  ~key_Q);
+    pbo[6] <= pbi[6] & (pai[0] |  ~key_f5) & (pai[1] |  ~key_E) & (pai[2] |  ~key_T) & (pai[3] |  ~key_U) & (pai[4] |  ~key_O) & (pai[5] |  ~key_at) & (pai[6] |  ~key_arrowup) & (pai[7] |  ~key_Q);
 
     pbo[7] <= pbi[7] & (pai[0] |  ~(key_up | key_down)) & (pai[1] |  ~(key_left | key_up | key_shiftl)) & (pai[2] |  ~key_X) & (pai[3] |  ~key_V) & (pai[4] |  ~key_N) & (pai[5] |  ~key_comma) & (pai[6] |  ~key_slash) & (pai[7] |  ~key_runstop);
 
     if(ps2_key[10]) begin
       case(ps2_key[7:0])
         8'h01 : key_pound <= pressed;
-        8'h03 : key_F5 <= pressed;
-        8'h04 : key_F3 <= pressed;
-        8'h05 : key_F1 <= pressed; //when X"06" => -- F2
+        8'h03 : key_f5 <= pressed;
+        8'h04 : key_f3 <= pressed;
+        8'h05 : key_f1 <= pressed; //when X"06" => -- F2
         8'h09 : key_plus <= pressed;
         8'h0C : restore_key <= pressed; // F4
-        8'h83 : key_F7 <= pressed;
+        8'h83 : key_f7 <= pressed;
         8'h0E : key_arrowleft <= pressed;
         8'h11 : key_commodore <= pressed;
         8'h12 : key_shiftl <= pressed; 
