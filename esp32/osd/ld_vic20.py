@@ -86,13 +86,15 @@ class ld_vic20:
     self.spi.write(bytearray([0, 0,0,(self.code_addr>>8)&0xFF,self.code_addr&0xFF])) # overwrite code
     self.spi.write(bytearray([0x78])) # disable IRQ
     # restore vias
-    viaremap=bytearray([1,3,0,2,6,7,255,255,8,9,10,11,12,13,14])
+    #                   0 1 2 3 4 5   6   7 8  9   10  11  12  13  14 15 16 17 18 19 20 21 22 23 24
+    viaremap=bytearray([1,3,0,2,6,7,255,255,8,255,255,255,255,255,255,10,11,12,13,14])
     for i in range(2):
       if self.via[i+1]:
         for j in range(len(viaremap)):
           if viaremap[j]<255:
             self.spi.write(bytearray([0xA9,self.via[i+1][j],0x8D,16*(i+1)+viaremap[j],0x91]))
-    self.spi.write(bytearray([0xA2,regs[4],0x9A,0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0],0x4C,regs[5],regs[6]]))
+    self.spi.write(bytearray([0xA2,regs[4],0x9A,0xA2]))
+    self.spi.write(bytearray([regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0],0x4C,regs[5],regs[6]]))
     self.cs.off()
     self.cs.on()
 
@@ -204,7 +206,7 @@ class ld_vic20:
       self.cpu_halt()
       while self.read_vice_module(f):
         pass
-      self.code_addr=0xE153
+      self.code_addr=0x8000
       self.vector_addr=0xFFFC
       self.store_rom(256)
       self.patch_rom(self.regs)
