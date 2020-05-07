@@ -11,6 +11,7 @@ class ld_vic20:
     self.spi=spi
     self.cs=cs
     self.cs.off()
+    self.via={}
 
   # LOAD/SAVE and CPU control
 
@@ -83,7 +84,15 @@ class ld_vic20:
     self.cs.off()
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,(self.code_addr>>8)&0xFF,self.code_addr&0xFF])) # overwrite code
-    self.spi.write(bytearray([0x78,0xA2,regs[4],0x9A,0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0],0x4C,regs[5],regs[6]]))
+    self.spi.write(bytearray([0x78])) # disable IRQ
+    # restore vias
+    viaremap=bytearray([1,3,0,2,6,7,255,255,8,9,10,11,12,13,14])
+    for i in range(2):
+      if self.via[i+1]:
+        for j in range(len(viaremap)):
+          if viaremap[j]<255:
+            self.spi.write(bytearray([0xA9,self.via[i+1][j],0x8D,16*(i+1)+viaremap[j],0x91]))
+    self.spi.write(bytearray([0xA2,regs[4],0x9A,0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0],0x4C,regs[5],regs[6]]))
     self.cs.off()
     self.cs.on()
 
@@ -148,8 +157,18 @@ class ld_vic20:
     header=bytearray(78)
     s.readinto(header)
     bytes_read=len(header)
-    print("size %d unknown bytes to read %d" % (size, size-bytes_read))
+    print("size %d unknown bytes to read %d" % (size,size-bytes_read))
     s.seek(size-bytes_read,1)
+    return True
+
+  def read_via(self,s,size,n):
+    print("READING VIA %d" % n)
+    self.via[n]=bytearray(25)
+    s.readinto(self.via[n])
+    bytes_read=len(self.via[n])
+    if size-bytes_read:
+      print("size %d unknown bytes to read %d" % (size,size-bytes_read))
+      s.seek(size-bytes_read,1)
     return True
   
   def read_vice_module(self,s):
@@ -158,11 +177,14 @@ class ld_vic20:
       type=header[0:0x10]
       #print(type)
       size=unpack("<I",header[0x12:0x16])[0]-0x16
-      #print("size", size)
       if type[0:9]==bytearray("VIC20MEM\0".encode()):
         return self.read_vic20mem(s,size)
       if type[0:6]==bytearray("VIC-I\0".encode()):
         return self.read_vic1(s,size)
+      if type[0:5]==bytearray("VIA1\0".encode()):
+        return self.read_via(s,size,1)
+      if type[0:5]==bytearray("VIA2\0".encode()):
+        return self.read_via(s,size,2)
       if type[0:8]==bytearray("MAINCPU\0".encode()):
         return self.read_maincpu(s,size)
       s.seek(size,1)
@@ -178,12 +200,14 @@ class ld_vic20:
     machine=header[0x15:0x25]
     expect=bytearray("VIC20\0")
     if machine[0:6]==expect:
+      self.via[1]=False
+      self.via[2]=False
       self.cpu_halt()
       while self.read_vice_module(f):
         pass
       self.code_addr=0xE153
       self.vector_addr=0xFFFC
-      self.store_rom(32)
+      self.store_rom(256)
       self.patch_rom(self.regs)
       self.ctrl(3) # reset and halt
       self.ctrl(1) # only reset
