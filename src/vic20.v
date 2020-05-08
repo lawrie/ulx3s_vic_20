@@ -153,20 +153,20 @@ module vic20 (
         2'b00: // 1MHz
           begin
              cpu_clken  <= (clkdiv[3:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
-             via1_clken <= (clkdiv[3:0] == 0) & (clkdiv[4] == 0);
-             via4_clken <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0);
+             via1_clken <= (clkdiv[3:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
+             via4_clken <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
           end
         2'b01: // 2MHz
           begin
              cpu_clken  <= (clkdiv[2:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
-             via1_clken <= (clkdiv[2:0] == 0) & (clkdiv[4] == 0);
-             via4_clken <= (clkdiv[0]   == 0) & (clkdiv[4] == 0);
+             via1_clken <= (clkdiv[2:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
+             via4_clken <= (clkdiv[0]   == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
           end
         default: // 4MHz
           begin
              cpu_clken  <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
-             via1_clken <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0);
-             via4_clken <=                      (clkdiv[4] == 0);
+             via1_clken <= (clkdiv[1:0] == 0) & (clkdiv[4] == 0) & ~R_cpu_control[1];
+             via4_clken <=                      (clkdiv[4] == 0) & ~R_cpu_control[1];
           end
       endcase
       cpu_clken1 <= cpu_clken;
