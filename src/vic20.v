@@ -254,9 +254,6 @@ module vic20 (
 	led8 <= 0;            // blue
      end
 
-   assign audio_l = 0;
-   assign audio_r = 0;
-
    // ===============================================================
    // 6502 CPU
    // ===============================================================
@@ -413,6 +410,43 @@ module vic20 (
       .ENA_4(via4_clken),
       .CLK(clk25)
    );
+
+   // ===============================================================
+   // Audio
+   // ===============================================================
+   
+   reg [7:0] r_base_sound;
+   reg [7:0] r_alto_sound;
+   reg [7:0] r_soprano_sound;
+   reg [7:0] r_noise_sound;
+   reg [3:0] r_amplitude;
+   wire [5:0] audio_out;
+
+   always @(posedge clk25) begin
+     if (!rnw && address[15:8] == 8'h90) begin
+       case (address[3:0]) 
+         4'ha: r_base_sound <= cpu_dout;
+	 4'hb: r_alto_sound <= cpu_dout;
+	 4'hc: r_soprano_sound <= cpu_dout;
+	 4'hd: r_noise_sound <= cpu_dout;
+         4'he: r_amplitude <= cpu_dout[3:0];
+       endcase
+     end
+   end
+
+   audio audio_i (
+     .i_clk(clk25),
+     .i_ena4(via4_clken),
+     .i_base_sound(r_base_sound),
+     .i_alto_sound(r_alto_sound),
+     .i_soprano_sound(r_soprano_sound),
+     .i_noise_sound(r_noise_sound),
+     .i_amplitude(r_amplitude),
+     .o_audio(audio_out)
+   );
+
+   assign audio_l = audio_out[5:2];
+   assign audio_r = audio_out[5:2];
 
    // ===============================================================
    // VGA
