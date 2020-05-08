@@ -452,6 +452,45 @@ module vic20 (
    // VGA
    // ===============================================================
    wire vga_de;
+   reg [15:0] r_screen_addr = 16'h1e00;
+   reg [15:0] r_char_rom_addr = 16'h8000;
+   reg [15:0] r_color_ram_addr = 16'h9400;
+   reg [2:0]  r_border_color;
+   reg [2:0]  r_back_color;
+   reg [3:0]  r_aux_color;
+   reg        r_inverted;
+
+   // Set start addresses for screen and character rom
+   always @(posedge clk25) begin
+     if (!rnw && address == 16'h9005) begin
+       case (cpu_dout[1:0])
+         2'b00: r_char_rom_addr[15:8]  <= 8'h80;
+         2'b01: r_char_rom_addr[15:8]  <= 8'h84;
+         2'b10: r_char_rom_addr[15:8]  <= 8'h88;
+         2'b11: r_char_rom_addr[15:8]  <= 8'h8c;
+       endcase
+
+       case (cpu_dout[7:4]) 
+         4'b1000: r_screen_addr[15:8] <= 8'h00;
+         4'b1100: r_screen_addr[15:8] <= 8'h10;
+         4'b1101: r_screen_addr[15:8] <= 8'h14;
+         4'b1110: r_screen_addr[15:8] <= 8'h18;
+         4'b1111: r_screen_addr[15:8] <= 8'h1c;
+       endcase
+     end
+
+     // Set border and background colors
+     if (!rnw && address == 16'h900f) begin
+       r_border_color <= cpu_dout[2:0];
+       r_inverted <= cpu_dout[3];
+       r_back_color <= cpu_dout[6:4];
+     end
+
+     // Set auxilliary color info
+     if (!rnw && address == 16'h900e) begin
+       r_aux_color <= cpu_dout[7:4];
+     end
+   end
 
    video vga (
      .clk(clk_vga),
@@ -462,7 +501,14 @@ module vic20 (
      .vga_hs(hsync),
      .vga_vs(vsync),
      .vga_addr(vga_addr),
-     .vga_data(vid_out)
+     .vga_data(vid_out),
+     .screen_addr(r_screen_addr),
+     .char_rom_addr(r_char_rom_addr),
+     .color_ram_addr(r_color_ram_addr),
+     .border_color(r_border_color),
+     .back_color(r_back_color),
+     .inverted(r_inverted),
+     .aux_color(r_aux_color)
    );
 
    // ===============================================================

@@ -9,7 +9,14 @@ module video (
   output        vga_vs,
   output        vga_de,
   input  [7:0]  vga_data,
-  output reg [15:0] vga_addr
+  output reg [15:0] vga_addr,
+  input [15:0]  screen_addr,
+  input [15:0]  char_rom_addr,
+  input [15:0]  color_ram_addr,
+  input [2:0]   border_color,
+  input [2:0]   back_color,
+  input         inverted,
+  input [3:0]   aux_color
 );
 
   parameter HA = 640;
@@ -33,10 +40,6 @@ module video (
 
   reg [9:0] hc = 0;
   reg [9:0] vc = 0;
-
-  reg [15:0] screen_addr = 16'h1000;
-  reg [15:0] color_ram_addr = 16'h9400;
-  reg [15:0] char_rom_addr = 16'h8000;
 
   always @(posedge clk) begin
     if (hc == HT - 1) begin
