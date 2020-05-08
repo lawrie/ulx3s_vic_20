@@ -85,18 +85,25 @@ class ld_vic20:
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,(self.code_addr>>8)&0xFF,self.code_addr&0xFF])) # overwrite code
     self.spi.write(bytearray([0x78])) # disable IRQ
-    # restore vias
+    # restore vias, viaremap[index]=header_position, value=via_register
     #                   0 1 2 3 4 5   6   7   8   9  10  11  12  13  14  15  16  17 18 19 20 21 22  23  24
     viaremap=bytearray([1,3,0,2,4,5,255,255,255,255,255,255,255,255,255,255,255,255,10,11,12,13,14,255,255])
+    #viaremap=bytearray([255]) # don't restore via
     for i in range(2):
       if self.via[i+1]:
-        #self.via[i+1][22]=0xC0 DEBUG force interrupt enabled
+        #self.via[i+1][22]=0xC0 # DEBUG force interrupt enabled
         for j in range(len(viaremap)):
           #print("via%d header[%d]=%02X -> reg %d" % (i+1,j,self.via[i+1][j],viaremap[j]))
           if viaremap[j]!=255:
-            self.spi.write(bytearray([0xA9,self.via[i+1][j],0x8D,16*(i+1)+viaremap[j],0x91]))
-    self.spi.write(bytearray([0xA2,regs[4],0x9A,0xA2]))
-    self.spi.write(bytearray([regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0],0x4C,regs[5],regs[6]]))
+            if j<22:
+              hindex=2-i # FIXME value from other via
+            else:
+              hindex=1+i # value from this via
+            self.spi.write(bytearray([0xA9,self.via[hindex][j],0x8D,16*(i+1)+viaremap[j],0x91]))
+    self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer
+    self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0]])) # X Y P A
+    #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
+    self.spi.write(bytearray([0x4C,regs[5],regs[6]])) # final JMP
     self.cs.off()
     self.cs.on()
 
@@ -184,9 +191,9 @@ class ld_vic20:
         return self.read_vic20mem(s,size)
       if type[0:6]==bytearray("VIC-I\0".encode()):
         return self.read_vic1(s,size)
-      if type[0:5]==bytearray("VIA2\0".encode()):
-        return self.read_via(s,size,1)
       if type[0:5]==bytearray("VIA1\0".encode()):
+        return self.read_via(s,size,1)
+      if type[0:5]==bytearray("VIA2\0".encode()):
         return self.read_via(s,size,2)
       if type[0:8]==bytearray("MAINCPU\0".encode()):
         return self.read_maincpu(s,size)
@@ -213,7 +220,8 @@ class ld_vic20:
       self.store_rom(256)
       self.patch_rom(self.regs)
       self.ctrl(3) # reset and halt
-      self.ctrl(1) # only reset
+      self.ctrl(2) # halt
+      self.ctrl(0) # should reset now
       self.cpu_continue()
       # restore original ROM after image starts
       self.cpu_halt()
