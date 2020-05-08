@@ -456,7 +456,7 @@ module vic20 (
    reg [15:0] r_char_rom_addr = 16'h8000;
    reg [15:0] r_color_ram_addr = 16'h9400;
    reg [2:0]  r_border_color;
-   reg [2:0]  r_back_color;
+   reg [3:0]  r_back_color;
    reg [3:0]  r_aux_color;
    reg        r_inverted;
 
@@ -476,7 +476,7 @@ module vic20 (
      if (!rnw && address == 16'h900f) begin
        r_border_color <= cpu_dout[2:0];
        r_inverted <= cpu_dout[3];
-       r_back_color <= cpu_dout[6:4];
+       r_back_color <= cpu_dout[7:4];
      end
 
      // Set auxilliary color info

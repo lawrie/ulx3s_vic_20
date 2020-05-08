@@ -14,7 +14,7 @@ module video (
   input [15:0]  char_rom_addr,
   input [15:0]  color_ram_addr,
   input [2:0]   border_color,
-  input [2:0]   back_color,
+  input [3:0]   back_color,
   input         inverted,
   input [3:0]   aux_color
 );
@@ -37,6 +37,26 @@ module video (
   parameter VT  = VA + VS + VFP + VBP;
   parameter VB = 56;
   parameter VB2 = VB/2;
+
+  wire [11:0] color_to_rgb [0:15];
+  assign color_to_rgb[0]  = 12'b000000000000;
+  assign color_to_rgb[1]  = 12'b111111111111;
+  assign color_to_rgb[2]  = 12'b111100000000;
+  assign color_to_rgb[3]  = 12'b000011111111;
+  assign color_to_rgb[4]  = 12'b111100001111;
+  assign color_to_rgb[5]  = 12'b000011110000;
+  assign color_to_rgb[6]  = 12'b000000001111;
+  assign color_to_rgb[7]  = 12'b111111110000;
+  assign color_to_rgb[8]  = 12'b111101110000;
+  assign color_to_rgb[9]  = 12'b111100110000;
+  assign color_to_rgb[10] = 12'b111101110111;
+  assign color_to_rgb[11] = 12'b011111111111;
+  assign color_to_rgb[12] = 12'b111101111111;
+  assign color_to_rgb[13] = 12'b011111110111;
+  assign color_to_rgb[14] = 12'b011111111111;
+  assign color_to_rgb[15] = 12'b1111111110111;
+
+  reg [2:0] fore_color = 3'b110;
 
   reg [9:0] hc = 0;
   reg [9:0] vc = 0;
@@ -71,7 +91,7 @@ module video (
   wire [15:0] char_row_addr = char_rom_addr + {5'b0, current_char, y[2:0]};
   reg [7:0] R_pixel_data;
 
-  wire pixel = R_pixel_data[7];
+  wire pixel = inverted ? R_pixel_data[7] : ~R_pixel_data[7];
 
   always @(posedge clk) begin
     if (hc[0]) begin
@@ -86,9 +106,21 @@ module video (
     end
   end
 
-  wire [3:0] red = border ? 4'b0 : (pixel ? 4'b0 : 4'b1111);
-  wire [3:0] green = border ? 4'b1111 : (pixel ? 4'b0 : 4'b1111);
-  wire [3:0] blue = border ? 4'b1111 : 4'b1111;
+  wire [3:0] border_r = color_to_rgb[border_color][11:8];
+  wire [3:0] border_g = color_to_rgb[border_color][7:4];
+  wire [3:0] border_b = color_to_rgb[border_color][3:0];
+
+  wire [4:0] back_r = color_to_rgb[back_color][11:8];
+  wire [4:0] back_g = color_to_rgb[back_color][7:4];
+  wire [4:0] back_b = color_to_rgb[back_color][3:0];
+
+  wire [4:0] fore_r = color_to_rgb[fore_color][11:8];
+  wire [4:0] fore_g = color_to_rgb[fore_color][7:4];
+  wire [4:0] fore_b = color_to_rgb[fore_color][3:0];
+
+  wire [3:0] red = border ? border_r : (pixel ? fore_r : back_r);
+  wire [3:0] green = border ? border_g : (pixel ? fore_g : back_g);
+  wire [3:0] blue = border ? border_b : (pixel ? fore_b : back_b);
 
   assign vga_r = !vga_de ? 4'b0 : red;
   assign vga_g = !vga_de ? 4'b0 : green;
