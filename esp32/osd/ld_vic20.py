@@ -100,9 +100,8 @@ class ld_vic20:
             else:
               hindex=1+i # value from this via
             self.spi.write(bytearray([0xA9,self.via[hindex][j],0x8D,16*(i+1)+viaremap[j],0x91]))
-    if self.vic1regs:
-      for i in range(len(self.vic1regs)):
-        self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
+    for i in range(len(self.vic1regs)):
+      self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
     self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer
     self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0]])) # X Y P A
     #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
@@ -166,13 +165,15 @@ class ld_vic20:
     return True
 
   def read_vic1(self,s,size):
-    print("READING COLOR RAM")
+    print("READING COLOR RAM, VIC-I REGS")
     header=bytearray(62)
     s.readinto(header)
     bytes_read=len(header)
     if self.ramconfig&2: # expanded 8K or more
+      print("0x9400 COLOR")
       self.load_stream(s,0x9400,1024)
     else: # unexpaned or with 3K expansion
+      print("0x9600 COLOR")
       self.load_stream(s,0x9600,1024)
     bytes_read+=1024
     self.vic1regs=bytearray(16)
