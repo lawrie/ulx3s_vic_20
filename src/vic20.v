@@ -463,7 +463,8 @@ module vic20 (
    // Set start addresses for screen and character rom
    always @(posedge clk25) begin
      if (!rnw && address == 16'h9005) begin
-       r_char_rom_addr[13:10] <= cpu_dout[3:0];
+       r_char_rom_addr[15] <= ~cpu_dout[3];
+       r_char_rom_addr[12:10] <= cpu_dout[2:0];
        r_screen_addr[12:10] <= cpu_dout[6:4];
      end
 
