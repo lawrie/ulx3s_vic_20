@@ -89,8 +89,8 @@ class ld_vic20:
     #                   0 1 2 3 4 5   6   7   8   9  10  11  12  13  14  15  16  17 18 19 20 21 22  23  24
     viaremap=bytearray([1,3,0,2,4,5,255,255,255,255,255,255,255,255,255,255,255,255,10,11,12,13,14,255,255])
     #viaremap=bytearray([255]) # don't restore via
-    for i in range(2):
-      if self.via[i+1]:
+    if self.via[1] and self.via[2]:
+      for i in range(2):
         #self.via[i+1][22]=0xC0 # DEBUG force interrupt enabled
         for j in range(len(viaremap)):
           #print("via%d header[%d]=%02X -> reg %d" % (i+1,j,self.via[i+1][j],viaremap[j]))
@@ -100,6 +100,9 @@ class ld_vic20:
             else:
               hindex=1+i # value from this via
             self.spi.write(bytearray([0xA9,self.via[hindex][j],0x8D,16*(i+1)+viaremap[j],0x91]))
+    if self.vic1regs:
+      for i in range(len(self.vic1regs)):
+        self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
     self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer
     self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0]])) # X Y P A
     #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
@@ -130,6 +133,7 @@ class ld_vic20:
     s.readinto(header)
     bytes_read=len(header)
     config=header[0]
+    self.ramconfig=config
     if True:
       print("1K RAM 0000-03FF")
       self.load_stream(s,0,1*1024)
@@ -163,11 +167,20 @@ class ld_vic20:
 
   def read_vic1(self,s,size):
     print("READING COLOR RAM")
-    header=bytearray(78)
+    header=bytearray(62)
     s.readinto(header)
     bytes_read=len(header)
-    print("size %d unknown bytes to read %d" % (size,size-bytes_read))
-    s.seek(size-bytes_read,1)
+    if self.ramconfig&2: # expanded 8K or more
+      self.load_stream(s,0x9400,1024)
+    else: # unexpaned or with 3K expansion
+      self.load_stream(s,0x9600,1024)
+    bytes_read+=1024
+    self.vic1regs=bytearray(16)
+    s.readinto(self.vic1regs)
+    bytes_read+=len(self.vic1regs)
+    if size-bytes_read:
+      print("size %d unknown bytes to read %d" % (size, size-bytes_read))
+      s.seek(size-bytes_read,1)
     return True
 
   def read_via(self,s,size,n):
@@ -211,6 +224,7 @@ class ld_vic20:
     if machine[0:6]==expect:
       self.via[1]=False
       self.via[2]=False
+      self.vic1regs=False
       self.cpu_halt()
       while self.read_vice_module(f):
         pass
