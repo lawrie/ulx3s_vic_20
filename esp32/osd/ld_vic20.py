@@ -105,7 +105,6 @@ class ld_vic20:
     #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
     self.spi.write(bytearray([0x4C,regs[5],regs[6]])) # final JMP
     self.cs.off()
-    self.cs.on()
 
   def read_maincpu(self,s,size):
     print("READING MAIN CPU STATE")
