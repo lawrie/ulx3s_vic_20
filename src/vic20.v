@@ -463,20 +463,13 @@ module vic20 (
    // Set start addresses for screen and character rom
    always @(posedge clk25) begin
      if (!rnw && address == 16'h9005) begin
-       case (cpu_dout[1:0])
-         2'b00: r_char_rom_addr[15:8]  <= 8'h80;
-         2'b01: r_char_rom_addr[15:8]  <= 8'h84;
-         2'b10: r_char_rom_addr[15:8]  <= 8'h88;
-         2'b11: r_char_rom_addr[15:8]  <= 8'h8c;
-       endcase
+       r_char_rom_addr[13:10] <= cpu_dout[3:0];
+       r_screen_addr[12:10] <= cpu_dout[6:4];
+     end
 
-       case (cpu_dout[7:4]) 
-         4'b1000: r_screen_addr[15:8] <= 8'h00;
-         4'b1100: r_screen_addr[15:8] <= 8'h10;
-         4'b1101: r_screen_addr[15:8] <= 8'h14;
-         4'b1110: r_screen_addr[15:8] <= 8'h18;
-         4'b1111: r_screen_addr[15:8] <= 8'h1c;
-       endcase
+     if (!rnw && address == 16'h9002) begin
+       r_screen_addr[9] <= cpu_dout[7];
+       r_color_ram_addr[9] <= cpu_dout[7];
      end
 
      // Set border and background colors
