@@ -93,6 +93,7 @@ module video (
 
   wire pixel = inverted ? R_pixel_data[7] : ~R_pixel_data[7];
 
+  reg R_pixel;
   always @(posedge clk) begin
     if (hc[0]) begin
       vga_addr <= char_row_addr;
@@ -100,6 +101,7 @@ module video (
         R_pixel_data <= {R_pixel_data[6:0],1'b0};
       else
         R_pixel_data <= vga_data;
+      R_pixel <= pixel;
     end else begin
       vga_addr <= char_addr;
       current_char <= vga_data;
@@ -118,9 +120,9 @@ module video (
   wire [4:0] fore_g = color_to_rgb[fore_color][7:4];
   wire [4:0] fore_b = color_to_rgb[fore_color][3:0];
 
-  wire [3:0] red = border ? border_r : (pixel ? fore_r : back_r);
-  wire [3:0] green = border ? border_g : (pixel ? fore_g : back_g);
-  wire [3:0] blue = border ? border_b : (pixel ? fore_b : back_b);
+  wire [3:0] red = border ? border_r : (R_pixel ? fore_r : back_r);
+  wire [3:0] green = border ? border_g : (R_pixel ? fore_g : back_g);
+  wire [3:0] blue = border ? border_b : (R_pixel ? fore_b : back_b);
 
   assign vga_r = !vga_de ? 4'b0 : red;
   assign vga_g = !vga_de ? 4'b0 : green;
