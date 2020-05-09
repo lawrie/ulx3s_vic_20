@@ -170,20 +170,11 @@ class ld_vic20:
     header=bytearray(62)
     s.readinto(header)
     bytes_read=len(header)
-    color=bytearray(1024)
-    s.readinto(color)
+    self.load_stream(s,0x9400,1024)
     bytes_read+=1024
-    # regs determine addr to write color
     self.vic1regs=bytearray(16)
     s.readinto(self.vic1regs)
     bytes_read+=len(self.vic1regs)
-    colorah=0x96
-    if self.vic1regs[2]&0x80:
-      colorah=0x94
-    self.cs.on()
-    self.spi.write(bytearray([0, 0,0,colorah,0]))
-    self.spi.write(color)
-    self.cs.off()
     if size-bytes_read:
       print("size %d unknown bytes to read %d" % (size, size-bytes_read))
       s.seek(size-bytes_read,1)
