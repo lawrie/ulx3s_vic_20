@@ -86,9 +86,10 @@ module video (
   wire [15:0] char8x16_addr = screen_addr + (y[7:4] * cols) + x[7:3];
   reg   [7:0] current_char;
 
-  wire [7:3] xattr_early = hc[8:4] - HBattr;
-  wire [15:0] attr_addr = color_ram_addr + (y[7:3] * cols) + xattr_early[7:3];
-  reg  [2:0] fore_color;
+  wire  [7:3] xattr_early   = hc[8:4] - HBattr;
+  wire [15:0] attr8x8_addr  = color_ram_addr + (y[7:3] * cols) + xattr_early[7:3];
+  wire [15:0] attr8x16_addr = color_ram_addr + (y[7:4] * cols) + xattr_early[7:3];
+  reg   [2:0] fore_color;
 
   wire [15:0] char8x8_row_addr  = char_rom_addr + {5'b0, current_char, y[2:0]};
   wire [15:0] char8x16_row_addr = char_rom_addr + {4'b0, current_char, y[3:0]};
@@ -113,7 +114,12 @@ module video (
       if (hc[3:1]) begin
         R_pixel_data <= {R_pixel_data[6:0],1'b0};
         if (hc[3:1] == 6)
-          vga_addr <= attr_addr;
+        begin
+          if(chars8x16)
+            vga_addr <= attr8x16_addr;
+          else
+            vga_addr <= attr8x8_addr;
+        end
         if (hc[3:1] == 7)
           R_attr <= vga_data[3:0];
       end else begin
