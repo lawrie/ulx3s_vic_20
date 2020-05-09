@@ -111,12 +111,10 @@ class ld_vic20:
             else:
               hindex=1+i # value from this via
             self.spi.write(bytearray([0xA9,self.via[hindex][j],0x8D,16*(i+1)+viaremap[j],0x91]))
-    self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer using X
-    self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,stackval[0],0x48,0x68,0xA9,regs[0]])) # X Y P A
-    #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
-    #if (regs[3]&4)==0:
-    #  self.spi.write(bytearray([0x58])) # CLI enable IRQ
-    self.spi.write(bytearray([0x4C,regs[5],regs[6]])) # final JMP
+    self.spi.write(bytearray([0xA2,regs[4],0x9A])) # X=stack S=X restore stack pointer using X
+    self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[6],0x48,0xA9,regs[5],0x48,0xA9,regs[3],0x48,0xA9,regs[0],0x40])) # X, Y, push PC_hi, push PC_lo, push P, A, RTI
+    #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,stackval[0],0x48,0x68,0xA9,regs[0]])) # X Y P A
+    #self.spi.write(bytearray([0x4C,regs[5],regs[6]])) # final JMP
     self.cs.off()
 
   def read_maincpu(self,s,size):
