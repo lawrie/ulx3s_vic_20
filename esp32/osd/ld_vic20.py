@@ -177,9 +177,9 @@ class ld_vic20:
     self.vic1regs=bytearray(16)
     s.readinto(self.vic1regs)
     bytes_read+=len(self.vic1regs)
-    colorah=0x94
+    colorah=0x96
     if self.vic1regs[2]&0x80:
-      colorah=0x96
+      colorah=0x94
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,colorah,0]))
     self.spi.write(color)
@@ -234,7 +234,7 @@ class ld_vic20:
       self.cpu_halt()
       while self.read_vice_module(f):
         pass
-      self.code_addr=0x8000
+      self.code_addr=0x8C00
       self.vector_addr=0xFFFC
       self.store_rom(256)
       self.patch_rom(self.regs)
