@@ -13,11 +13,26 @@ txs
 ldx #$11
 ; restore Y
 ldy #$22
-; restore flags using A and stack
-lda #$FF
+; **** option 1 ****
+; push PC, P, load A, RTI
+; PC high byte
+lda #$33
 pha
-plp
-; restore A
+; PC low byte
+lda #$44
+pha
+; P register
+lda #$55
+pha
+; A register
 lda #$AA
+rti
+; **** option 2 ****
+; restore flags using A and stack
+;lda #$FF
+;pha
+;plp
+; restore A
+;lda #$AA
 ; final JMP
-jmp $ABCD
+;jmp $ABCD
