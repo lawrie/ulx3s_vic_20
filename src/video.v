@@ -17,7 +17,9 @@ module video (
   input [3:0]   back_color,
   input         inverted,
   input         chars8x16,
-  input [3:0]   aux_color
+  input [3:0]   aux_color,
+  input [6:0]   rows,
+  input [6:0]   cols
 );
 
   parameter HA = 640;
@@ -28,7 +30,7 @@ module video (
   parameter HB = 144;
   parameter HB2 = HB/2 - 8; // NOTE pixel coarse H-adjust
   parameter HDELAY = 3;   // NOTE pixel fine H-adjust
-  parameter HBattr = 4;   // NOTE attr coarse H-adjust
+  parameter HBattr = 8;   // NOTE attr coarse H-adjust
   parameter HBadj = 4;    // NOTE border H-adjust
 
   parameter VA = 480;
@@ -55,9 +57,7 @@ module video (
   assign color_to_rgb[12] = 12'b111101111111;
   assign color_to_rgb[13] = 12'b011111110111;
   assign color_to_rgb[14] = 12'b011111111111;
-  assign color_to_rgb[15] = 12'b1111111110111;
-
-  reg [2:0] fore_color = 3'b110;
+  assign color_to_rgb[15] = 12'b111111110111;
 
   reg [9:0] hc = 0;
   reg [9:0] vc = 0;
@@ -82,13 +82,13 @@ module video (
   wire vBorder = (vc < VB || vc >= VA - VB);
   wire border = hBorder || vBorder;
 
-  wire [15:0] char8x8_addr  = screen_addr + (y[7:3] * 22) + x[7:3];
-  wire [15:0] char8x16_addr = screen_addr + (y[7:4] * 22) + x[7:3];
+  wire [15:0] char8x8_addr  = screen_addr + (y[7:3] * cols) + x[7:3];
+  wire [15:0] char8x16_addr = screen_addr + (y[7:4] * cols) + x[7:3];
   reg   [7:0] current_char;
 
-  wire [15:0] attr_addr = color_ram_addr + (y[7:3] * 22) + x[7:3];
-  reg   [7:0] attr;
-  wire  [2:0] color = attr[2:0];
+  wire [7:3] xattr_early = hc[8:4] - HBattr;
+  wire [15:0] attr_addr = color_ram_addr + (y[7:3] * cols) + xattr_early[7:3];
+  reg  [2:0] fore_color;
 
   wire [15:0] char8x8_row_addr  = char_rom_addr + {5'b0, current_char, y[2:0]};
   wire [15:0] char8x16_row_addr = char_rom_addr + {4'b0, current_char, y[3:0]};
@@ -97,16 +97,29 @@ module video (
   wire pixel = inverted ? R_pixel_data[7] : ~R_pixel_data[7];
 
   reg R_pixel;
+  reg [3:0] R_attr;
+  reg [3:0] R_attr_delay;
+
   always @(posedge clk) begin
     if (hc[0]) begin
+      R_attr_delay <= R_attr;
+      fore_color <= R_attr_delay[2:0];
+      
       if (chars8x16)
         vga_addr <= char8x16_row_addr;
       else
         vga_addr <= char8x8_row_addr;
-      if (hc[3:1])
+      
+      if (hc[3:1]) begin
         R_pixel_data <= {R_pixel_data[6:0],1'b0};
-      else
+        if (hc[3:1] == 6)
+          vga_addr <= attr_addr;
+        if (hc[3:1] == 7)
+          R_attr <= vga_data[3:0];
+      end else begin
         R_pixel_data <= vga_data;
+      end
+      
       R_pixel <= pixel;
     end else begin
       if (chars8x16)

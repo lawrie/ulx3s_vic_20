@@ -460,35 +460,44 @@ module vic20 (
    reg [3:0]  r_aux_color;
    reg        r_inverted;
    reg        r_chars8x16;
+   reg [6:0]  r_cols = 22;
+   reg [6:0]  r_rows = 23;
 
    // Set start addresses for screen and character rom
    always @(posedge clk25) begin
-     if (!rnw && address == 16'h9005) begin
-       r_char_rom_addr[15] <= ~cpu_dout[3];
-       r_char_rom_addr[12:10] <= cpu_dout[2:0];
-       r_screen_addr[15] <= ~cpu_dout[7];
-       r_screen_addr[12:10] <= cpu_dout[6:4];
-     end
+     if (!rnw && address[15:4] == 12'h900) begin
+       // Columns and extra bit for screen and color ram address
+       if (address[3:0] == 4'h2) begin
+         r_screen_addr[9] <= cpu_dout[7];
+         r_color_ram_addr[9] <= cpu_dout[7];
+	 r_cols <= cpu_dout[6:0];
+       end
 
-     if (!rnw && address == 16'h9002) begin
-       r_screen_addr[9] <= cpu_dout[7];
-       r_color_ram_addr[9] <= cpu_dout[7];
-     end
+       // Rows sand 8x16 characters
+       if (address[3:0] == 4'h3) begin
+         r_chars8x16 <= cpu_dout[0];
+         r_rows <= cpu_dout[6:0];
+       end
 
-     if (!rnw && address == 16'h9003) begin
-       r_chars8x16 <= cpu_dout[0];
-     end
+       // Screen and character rom address
+       if (address[3:0] == 4'h5) begin
+         r_char_rom_addr[15] <= ~cpu_dout[3];
+         r_char_rom_addr[12:10] <= cpu_dout[2:0];
+         r_screen_addr[15] <= ~cpu_dout[7];
+         r_screen_addr[12:10] <= cpu_dout[6:4];
+       end
 
-     // Set border and background colors
-     if (!rnw && address == 16'h900f) begin
-       r_border_color <= cpu_dout[2:0];
-       r_inverted <= cpu_dout[3];
-       r_back_color <= cpu_dout[7:4];
-     end
+       // Set auxilliary color info
+       if (address[3:0] == 4'he) begin
+         r_aux_color <= cpu_dout[7:4];
+       end
 
-     // Set auxilliary color info
-     if (!rnw && address == 16'h900e) begin
-       r_aux_color <= cpu_dout[7:4];
+       // Set border and background colors
+       if (address[3:0] == 4'hf) begin
+         r_border_color <= cpu_dout[2:0];
+         r_inverted <= cpu_dout[3];
+         r_back_color <= cpu_dout[7:4];
+       end
      end
    end
 
@@ -509,7 +518,9 @@ module vic20 (
      .back_color(r_back_color),
      .inverted(r_inverted),
      .chars8x16(r_chars8x16),
-     .aux_color(r_aux_color)
+     .aux_color(r_aux_color),
+     .cols(r_cols),
+     .rows(r_rows)
    );
 
    // ===============================================================
