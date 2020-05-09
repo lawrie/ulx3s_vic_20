@@ -459,6 +459,7 @@ module vic20 (
    reg [3:0]  r_back_color;
    reg [3:0]  r_aux_color;
    reg        r_inverted;
+   reg        r_chars8x16;
 
    // Set start addresses for screen and character rom
    always @(posedge clk25) begin
@@ -472,6 +473,10 @@ module vic20 (
      if (!rnw && address == 16'h9002) begin
        r_screen_addr[9] <= cpu_dout[7];
        r_color_ram_addr[9] <= cpu_dout[7];
+     end
+
+     if (!rnw && address == 16'h9003) begin
+       r_chars8x16 <= cpu_dout[0];
      end
 
      // Set border and background colors
@@ -503,6 +508,7 @@ module vic20 (
      .border_color(r_border_color),
      .back_color(r_back_color),
      .inverted(r_inverted),
+     .chars8x16(r_chars8x16),
      .aux_color(r_aux_color)
    );
 

@@ -16,6 +16,7 @@ module video (
   input [2:0]   border_color,
   input [3:0]   back_color,
   input         inverted,
+  input         chars8x16,
   input [3:0]   aux_color
 );
 
@@ -81,29 +82,37 @@ module video (
   wire vBorder = (vc < VB || vc >= VA - VB);
   wire border = hBorder || vBorder;
 
-  wire [15:0] char_addr = screen_addr + (y[7:3] * 22) + x[7:3];
-  reg [7:0] current_char;
+  wire [15:0] char8x8_addr  = screen_addr + (y[7:3] * 22) + x[7:3];
+  wire [15:0] char8x16_addr = screen_addr + (y[7:4] * 22) + x[7:3];
+  reg   [7:0] current_char;
 
   wire [15:0] attr_addr = color_ram_addr + (y[7:3] * 22) + x[7:3];
-  reg [7:0] attr;
-  wire [2:0] color = attr[2:0];
+  reg   [7:0] attr;
+  wire  [2:0] color = attr[2:0];
 
-  wire [15:0] char_row_addr = char_rom_addr + {5'b0, current_char, y[2:0]};
-  reg [7:0] R_pixel_data;
+  wire [15:0] char8x8_row_addr  = char_rom_addr + {5'b0, current_char, y[2:0]};
+  wire [15:0] char8x16_row_addr = char_rom_addr + {4'b0, current_char, y[3:0]};
+  reg   [7:0] R_pixel_data;
 
   wire pixel = inverted ? R_pixel_data[7] : ~R_pixel_data[7];
 
   reg R_pixel;
   always @(posedge clk) begin
     if (hc[0]) begin
-      vga_addr <= char_row_addr;
+      if (chars8x16)
+        vga_addr <= char8x16_row_addr;
+      else
+        vga_addr <= char8x8_row_addr;
       if (hc[3:1])
         R_pixel_data <= {R_pixel_data[6:0],1'b0};
       else
         R_pixel_data <= vga_data;
       R_pixel <= pixel;
     end else begin
-      vga_addr <= char_addr;
+      if (chars8x16)
+        vga_addr <= char8x16_addr;
+      else
+        vga_addr <= char8x8_addr;
       current_char <= vga_data;
     end
   end
