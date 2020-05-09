@@ -100,8 +100,9 @@ class ld_vic20:
             else:
               hindex=1+i # value from this via
             self.spi.write(bytearray([0xA9,self.via[hindex][j],0x8D,16*(i+1)+viaremap[j],0x91]))
-    for i in range(len(self.vic1regs)):
-      self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
+    if self.vic1regs:
+      for i in range(len(self.vic1regs)):
+        self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
     self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer
     self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0]])) # X Y P A
     #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
@@ -169,16 +170,20 @@ class ld_vic20:
     header=bytearray(62)
     s.readinto(header)
     bytes_read=len(header)
-    if self.ramconfig&2: # expanded 8K or more
-      print("0x9400 COLOR")
-      self.load_stream(s,0x9400,1024)
-    else: # unexpaned or with 3K expansion
-      print("0x9600 COLOR")
-      self.load_stream(s,0x9600,1024)
+    color=bytearray(1024)
+    s.readinto(color)
     bytes_read+=1024
+    # regs determine addr to write color
     self.vic1regs=bytearray(16)
     s.readinto(self.vic1regs)
     bytes_read+=len(self.vic1regs)
+    colorah=0x94
+    if self.vic1regs[2]&0x80:
+      colorah=0x96
+    self.cs.on()
+    self.spi.write(bytearray([0, 0,0,colorah,0]))
+    self.spi.write(color)
+    self.cs.off()
     if size-bytes_read:
       print("size %d unknown bytes to read %d" % (size, size-bytes_read))
       s.seek(size-bytes_read,1)
