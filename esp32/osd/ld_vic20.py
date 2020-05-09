@@ -5,6 +5,7 @@
 # LICENSE=BSD
 
 from struct import unpack
+from time import sleep_ms
 
 class ld_vic20:
   def __init__(self,spi,cs):
@@ -75,6 +76,8 @@ class ld_vic20:
     self.spi.write(bytearray([0, 0,0,(self.vector_addr>>8)&0xFF,self.vector_addr&0xFF]))
     self.spi.write(self.stored_vector)
     self.cs.off()
+    del self.stored_code
+    del self.stored_vector
 
   def patch_rom(self,regs):
     # regs   = 0:A 1:X 2:Y 3:P 4:S 5-6:PC
@@ -82,9 +85,17 @@ class ld_vic20:
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,(self.vector_addr>>8)&0xFF,self.vector_addr&0xFF, self.code_addr&0xFF, (self.code_addr>>8)&0xFF])) # overwrite reset vector at 0xFFFC
     self.cs.off()
+    stackval=bytearray(1)
+    self.cs.on()
+    self.spi.write(bytearray([1, 0,0,1,regs[4], 0])) # read stack value
+    self.spi.readinto(stackval)
+    self.cs.off()
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,(self.code_addr>>8)&0xFF,self.code_addr&0xFF])) # overwrite code
-    self.spi.write(bytearray([0x78])) # disable IRQ
+    self.spi.write(bytearray([0x78])) # SEI disable IRQ
+    if self.vic1regs:
+      for i in range(len(self.vic1regs)):
+        self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
     # restore vias, viaremap[index]=header_position, value=via_register
     #                   0 1 2 3 4 5   6   7   8   9  10  11  12  13  14  15  16  17 18 19 20 21 22  23  24
     viaremap=bytearray([1,3,0,2,4,5,255,255,255,255,255,255,255,255,255,255,255,255,10,11,12,13,14,255,255])
@@ -100,12 +111,11 @@ class ld_vic20:
             else:
               hindex=1+i # value from this via
             self.spi.write(bytearray([0xA9,self.via[hindex][j],0x8D,16*(i+1)+viaremap[j],0x91]))
-    if self.vic1regs:
-      for i in range(len(self.vic1regs)):
-        self.spi.write(bytearray([0xA9,self.vic1regs[i],0x8D,i,0x90]))
-    self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer
-    self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,regs[0]])) # X Y P A
+    self.spi.write(bytearray([0xA2,regs[4],0x9A])) # S restore stack pointer using X
+    self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[3],0x48,0x28,0xA9,stackval[0],0x48,0x68,0xA9,regs[0]])) # X Y P A
     #self.spi.write(bytearray([0xA2,regs[1],0xA0,regs[2],0xA9,regs[0]])) # X Y A
+    #if (regs[3]&4)==0:
+    #  self.spi.write(bytearray([0x58])) # CLI enable IRQ
     self.spi.write(bytearray([0x4C,regs[5],regs[6]])) # final JMP
     self.cs.off()
 
@@ -227,16 +237,15 @@ class ld_vic20:
         pass
       self.code_addr=0x8C00
       self.vector_addr=0xFFFC
-      self.store_rom(256)
+      self.store_rom(320)
       self.patch_rom(self.regs)
       self.ctrl(3) # reset and halt
-      self.ctrl(2) # halt
-      self.ctrl(0) # should reset now
+      self.cpu_halt()
       self.cpu_continue()
-      # restore original ROM after image starts
+      sleep_ms(5)
       self.cpu_halt()
       self.restore_rom()
-      self.cpu_continue() # release reset
+      self.cpu_continue()
     else:
       print("unrecognized header")
       print("header:", header)
