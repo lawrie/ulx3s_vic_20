@@ -31,14 +31,15 @@ module video (
   parameter HT  = HA + HS + HFP + HBP;
   parameter HDELAY = 3;     // NOTE pixel fine H-adjust
   parameter HBattr = 0;     // NOTE attr coarse H-adjust
-  parameter HBadj  = 50+4;  // NOTE border H-adjust
-  parameter HB2adj = 50-16;
+  parameter HBadj  = 100+4; // NOTE border H-adjust
+  parameter HB2adj = 100-16;
 
   parameter VA = 480;
   parameter VS  = 2;
   parameter VFP = 11;
   parameter VBP = 31;
   parameter VT  = VA + VS + VFP + VBP;
+  parameter VBadj = 0;    // NOTE border V-adjust
 
   wire [11:0] color_to_rgb [0:15];
   assign color_to_rgb[0]  = 12'b000000000000;
@@ -75,20 +76,29 @@ module video (
 
   reg [9:0] hBorder_left, hBorder_right, hBorder_left2;
   reg [9:0] vBorder_top,  vBorder_bottom;
+  reg R_hBorder, R_vBorder;
   always @(posedge clk)
   begin
     hBorder_left     <= {xorigin,3'b0}+HBadj;
     hBorder_left2    <= {xorigin,3'b0}+HB2adj;
-    hBorder_right    <= hBorder_left + {cols,4'b0};
-    vBorder_top      <= {yorigin};
+    hBorder_right    <= hBorder_left + {cols,4'b0} - 1;
+    vBorder_top      <= {yorigin,1'b0}+VBadj;
     if(chars8x16)
-      vBorder_bottom <= vBorder_top + {rows,4'b0};
+      vBorder_bottom <= vBorder_top + {rows,4'd0} - 17;
     else
-      vBorder_bottom <= vBorder_top + {rows,3'b0};
+      vBorder_bottom <= vBorder_top + {rows,3'b0} - 1;
+    if(hc == hBorder_left)
+      R_hBorder <= 0;
+    else
+      if(hc == hBorder_right)
+        R_hBorder <= 1;
+    if(vc == vBorder_top)
+      R_vBorder <= 0;
+    else
+      if(vc == vBorder_bottom)
+        R_vBorder <= 1;
   end
-  wire hBorder = (hc < hBorder_left || hc >= hBorder_right);
-  wire vBorder = (vc < vBorder_top  || vc >= vBorder_bottom);
-  wire border  = hBorder || vBorder;
+  wire border = R_hBorder || R_vBorder;
 
   // Pixel co-ordinates
   wire [9:0] x = hc - hBorder_left2;

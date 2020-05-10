@@ -461,7 +461,7 @@ module vic20 (
    reg        r_inverted;
    reg        r_chars8x16;
    reg [6:0]  r_xorigin = 12;
-   reg [6:0]  r_yorigin = 38;
+   reg [7:0]  r_yorigin = 38;
    reg [6:0]  r_cols = 22;
    reg [6:0]  r_rows = 23;
 
@@ -474,7 +474,7 @@ module vic20 (
        end
 
        if (address[3:0] == 4'h1) begin
-	 r_yorigin <= cpu_dout[6:0];
+	 r_yorigin <= cpu_dout;
        end
 
        // Columns and extra bit for screen and color ram address
@@ -530,6 +530,8 @@ module vic20 (
      .inverted(r_inverted),
      .chars8x16(r_chars8x16),
      .aux_color(r_aux_color),
+     .xorigin(r_xorigin),
+     .yorigin(r_yorigin),
      .cols(r_cols),
      .rows(r_rows)
    );
