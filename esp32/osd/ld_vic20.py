@@ -271,12 +271,13 @@ class ld_vic20:
     f.readinto(header)
     addr=unpack("<H",header)[0]
     self.cpu_halt()
-    self.load_stream(f,addr)
+    self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
     self.type_run()
     self.cpu_continue()
 
   def loadprg2reset_unexpanded(self,filename):
     self.cpu_halt()
+    # patch ROM to become unexpanded
     self.poke(0xFDAC,bytearray([0x10]))
     self.poke(0xFDC7,bytearray([0xFF]))
     self.cpu_reset_halt()
@@ -287,6 +288,7 @@ class ld_vic20:
 
   def loadprg2reset(self,filename):
     self.cpu_halt()
+    # write normal ROM content
     self.poke(0xFDAC,bytearray([0x04]))
     self.poke(0xFDC7,bytearray([0x21]))
     self.cpu_reset_halt()
