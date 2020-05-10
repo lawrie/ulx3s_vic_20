@@ -52,6 +52,9 @@ class ld_vic20:
   def cpu_halt(self):
     self.ctrl(2)
 
+  def cpu_reset_halt(self):
+    self.ctrl(3)
+
   def cpu_continue(self):
     self.ctrl(0)
 
@@ -84,11 +87,6 @@ class ld_vic20:
     # overwrite with register restore code
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,(self.vector_addr>>8)&0xFF,self.vector_addr&0xFF, self.code_addr&0xFF, (self.code_addr>>8)&0xFF])) # overwrite reset vector at 0xFFFC
-    self.cs.off()
-    stackval=bytearray(1)
-    self.cs.on()
-    self.spi.write(bytearray([1, 0,0,1,regs[4], 0])) # read stack value
-    self.spi.readinto(stackval)
     self.cs.off()
     self.cs.on()
     self.spi.write(bytearray([0, 0,0,(self.code_addr>>8)&0xFF,self.code_addr&0xFF])) # overwrite code
@@ -197,6 +195,7 @@ class ld_vic20:
       print("size %d unknown bytes to read %d" % (size,size-bytes_read))
       s.seek(size-bytes_read,1)
     return True
+
   
   def read_vice_module(self,s):
     header=bytearray(0x16)
@@ -248,6 +247,23 @@ class ld_vic20:
       print("unrecognized header")
       print("header:", header)
       print("expected:", expect)
+  
+
+  def poke(self,addr,data):
+    self.cs.on()
+    self.spi.write(bytearray([0,(addr>>24)&0xFF,(addr>>16)&0xFF,(addr>>8)&0xFF,addr&0xFF]))
+    self.spi.write(data)
+    self.cs.off()
+
+
+  def type_run(self):
+    # fill keyboard buffer as if RUN <ENTER> has been typed
+    keybuf="RUN\r"
+    self.cpu_halt()
+    self.poke(0x277,keybuf)
+    self.poke(0xC6,bytearray([len(keybuf)]))
+    self.cpu_continue()
+
 
   def loadprg(self,filename):
     f=open(filename,"rb")
@@ -256,4 +272,25 @@ class ld_vic20:
     addr=unpack("<H",header)[0]
     self.cpu_halt()
     self.load_stream(f,addr)
+    self.type_run()
     self.cpu_continue()
+
+  def loadprg2reset_unexpanded(self,filename):
+    self.cpu_halt()
+    self.poke(0xFDAC,bytearray([0x10]))
+    self.poke(0xFDC7,bytearray([0xFF]))
+    self.cpu_reset_halt()
+    self.cpu_halt()
+    self.cpu_continue()
+    sleep_ms(3000)
+    self.loadprg(filename)
+
+  def loadprg2reset(self,filename):
+    self.cpu_halt()
+    self.poke(0xFDAC,bytearray([0x04]))
+    self.poke(0xFDC7,bytearray([0x21]))
+    self.cpu_reset_halt()
+    self.cpu_halt()
+    self.cpu_continue()
+    sleep_ms(3000)
+    self.loadprg(filename)
