@@ -95,20 +95,20 @@ module video (
   wire border  = hBorder || vBorder;
 
   // Pixel co-ordinates
-  wire [8:0] x = hc[9:1] - hBorder_left2[9:1];
-  wire [8:0] y = vc[9:1] - vBorder_top[9:1];
+  wire [9:0] x = hc[9:0] - hBorder_left2[9:0];
+  wire [9:0] y = vc[9:0] - vBorder_top[9:0];
 
-  wire [15:0] char8x8_addr  = screen_addr + (y[7:3] * cols) + x[7:3];
-  wire [15:0] char8x16_addr = screen_addr + (y[7:4] * cols) + x[7:3];
+  wire [15:0] char8x8_addr  = screen_addr + (y[8:4] * cols) + x[8:4];
+  wire [15:0] char8x16_addr = screen_addr + (y[8:5] * cols) + x[8:4];
   reg   [7:0] current_char;
 
   wire  [7:3] xattr_early   = hc[8:4] - HBattr;
-  wire [15:0] attr8x8_addr  = color_ram_addr + (y[7:3] * cols) + xattr_early[7:3];
-  wire [15:0] attr8x16_addr = color_ram_addr + (y[7:4] * cols) + xattr_early[7:3];
+  wire [15:0] attr8x8_addr  = color_ram_addr + (y[8:4] * cols) + xattr_early[7:3];
+  wire [15:0] attr8x16_addr = color_ram_addr + (y[8:5] * cols) + xattr_early[7:3];
   reg   [2:0] fore_color;
 
-  wire [15:0] char8x8_row_addr  = char_rom_addr + {5'b0, current_char, y[2:0]};
-  wire [15:0] char8x16_row_addr = char_rom_addr + {4'b0, current_char, y[3:0]};
+  wire [15:0] char8x8_row_addr  = char_rom_addr + {5'b0, current_char, y[3:1]};
+  wire [15:0] char8x16_row_addr = char_rom_addr + {4'b0, current_char, y[4:1]};
   reg   [7:0] R_pixel_data;
 
   wire pixel = inverted ? R_pixel_data[7] : ~R_pixel_data[7];
@@ -170,7 +170,7 @@ module video (
   end
 
   always @(*) begin
-    if (!x[0]) begin
+    if (!x[1]) begin
       case ({R_pixel, pixel})
         2'b00: color_2bit = back_color;
 	2'b01: color_2bit = {1'b0, border_color};
