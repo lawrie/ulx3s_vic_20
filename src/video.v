@@ -119,7 +119,7 @@ module video (
   reg       multi_color;
 
   always @(posedge clk) begin
-    if (hc[0]) begin
+    if (x[0]) begin
       R_attr_delay <= R_attr;
       fore_color <= R_attr_delay[2:0];
       multi_color <= R_attr_delay[3];
@@ -129,16 +129,16 @@ module video (
       else
         vga_addr <= char8x8_row_addr;
       
-      if (hc[3:1]) begin
+      if (x[3:1]) begin
         R_pixel_data <= {R_pixel_data[6:0],1'b0};
-        if (hc[3:1] == 6)
+        if (x[3:1] == 6)
         begin
           if(chars8x16)
             vga_addr <= attr8x16_addr;
           else
             vga_addr <= attr8x8_addr;
         end
-        if (hc[3:1] == 7)
+        if (x[3:1] == 7)
           R_attr <= vga_data[3:0];
       end else begin
         R_pixel_data <= vga_data;
@@ -166,7 +166,7 @@ module video (
   reg [3:0] R_color_2bit;
 
   always @(posedge clk) begin
-    if (hc[0]) R_color_2bit <= color_2bit;
+    if (x[0]) R_color_2bit <= color_2bit;
   end
 
   always @(*) begin
