@@ -74,13 +74,19 @@ module video (
   assign vga_vs = !(vc >= VA + VFP && vc < VA + VFP + VS);
   assign vga_de = !(hc > HA || vc > VA);
 
-  // Pixel co-ordinates
-  wire [7:0] x = hc[9:1] - HB2;
-  wire [7:0] y = vc[9:1] - VB2;
+  wire hBorder = (hc < (HB + HBadj) || hc >= (HB + HBadj + {cols,4'b0}));
+  reg [9:0] vBorder_right;
+  always @(posedge clk)
+    if(chars8x16)
+      vBorder_right <= VB + {rows,4'b0};
+    else
+      vBorder_right <= VB + {rows,3'b0};
+  wire vBorder = (vc < VB || vc >= vBorder_right);
+  wire border  = hBorder || vBorder;
 
-  wire hBorder = (hc < (HB + HBadj) || hc >= (HA - HB + HBadj));
-  wire vBorder = (vc < VB || vc >= VA - VB);
-  wire border = hBorder || vBorder;
+  // Pixel co-ordinates
+  wire [8:0] x = hc[9:1] - HB2;
+  wire [8:0] y = vc[9:1] - VB2;
 
   wire [15:0] char8x8_addr  = screen_addr + (y[7:3] * cols) + x[7:3];
   wire [15:0] char8x16_addr = screen_addr + (y[7:4] * cols) + x[7:3];
