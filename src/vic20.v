@@ -456,7 +456,7 @@ module vic20 (
 	 r_cols <= cpu_dout[6:0];
        end
 
-       // Rows sand 8x16 characters
+       // Rows and 8x16 characters
        if (address[3:0] == 4'h3) begin
          r_chars8x16 <= cpu_dout[0];
          r_rows <= cpu_dout[6:0];
