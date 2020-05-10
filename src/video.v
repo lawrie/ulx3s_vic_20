@@ -33,7 +33,7 @@ module video (
   parameter HB2adj = 8;
   parameter HB2 = HB/2 - HB2adj; // NOTE pixel coarse H-adjust
   parameter HDELAY = 3;   // NOTE pixel fine H-adjust
-  parameter HBattr = 8;   // NOTE attr coarse H-adjust
+  parameter HBattr = 0;   // NOTE attr coarse H-adjust
   parameter HBadj = 4;    // NOTE border H-adjust
 
   parameter VA = 480;
@@ -102,7 +102,7 @@ module video (
   wire [15:0] char8x16_addr = screen_addr + (y[8:5] * cols) + x[8:4];
   reg   [7:0] current_char;
 
-  wire  [7:3] xattr_early   = hc[8:4] - HBattr;
+  wire  [7:3] xattr_early   = x[8:4] - HBattr;
   wire [15:0] attr8x8_addr  = color_ram_addr + (y[8:4] * cols) + xattr_early[7:3];
   wire [15:0] attr8x16_addr = color_ram_addr + (y[8:5] * cols) + xattr_early[7:3];
   reg   [2:0] fore_color;
