@@ -178,9 +178,9 @@ module video (
   wire [3:0] fore_g = color_to_rgb[char_color][7:4];
   wire [3:0] fore_b = color_to_rgb[char_color][3:0];
 
-  wire [3:0] red = border ? border_r : (R_pixel ? fore_r : back_r);
-  wire [3:0] green = border ? border_g : (R_pixel ? fore_g : back_g);
-  wire [3:0] blue = border ? border_b : (R_pixel ? fore_b : back_b);
+  wire [3:0] red = border ? border_r : (R_pixel || multi_color ? fore_r : back_r);
+  wire [3:0] green = border ? border_g : (R_pixel || multi_color ? fore_g : back_g);
+  wire [3:0] blue = border ? border_b : (R_pixel || multi_color ? fore_b : back_b);
 
   assign vga_r = !vga_de ? 4'b0 : red;
   assign vga_g = !vga_de ? 4'b0 : green;
