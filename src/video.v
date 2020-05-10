@@ -59,20 +59,33 @@ module video (
   assign color_to_rgb[14] = 12'b011111111111;
   assign color_to_rgb[15] = 12'b111111110111;
 
-  reg [9:0] hc = 0;
-  reg [9:0] vc = 0;
+  reg [9:0] hc;
+  reg [9:0] vc;
 
+  reg R_vga_hs, R_vga_vs, R_vga_hde, R_vga_vde;
   always @(posedge clk) begin
     if (hc == HT - 1) begin
       hc <= 0;
       if (vc == VT - 1) vc <= 0;
       else vc <= vc + 1;
     end else hc <= hc + 1;
+    case(hc)
+      0           : R_vga_hde <= 1;
+      HA          : R_vga_hde <= 0;
+      HA+HFP      : R_vga_hs  <= 1;
+      HA+HFP+HS-1 : R_vga_hs  <= 0;
+    endcase
+    case(vc)
+      0           : R_vga_vde <= 1;
+      VA          : R_vga_vde <= 0;
+      VA+VFP      : R_vga_vs  <= 1;
+      VA+VFP+VS-1 : R_vga_vs  <= 0;
+    endcase
   end
 
-  assign vga_hs = !(hc >= HA + HFP && hc < HA + HFP + HS);
-  assign vga_vs = !(vc >= VA + VFP && vc < VA + VFP + VS);
-  assign vga_de = !(hc > HA || vc > VA);
+  assign vga_hs = !R_vga_hs;
+  assign vga_vs = !R_vga_vs;
+  assign vga_de = R_vga_hde && R_vga_vde;
 
   reg [9:0] hBorder_left, hBorder_right, hBorder_left2;
   reg [9:0] vBorder_top,  vBorder_bottom;
