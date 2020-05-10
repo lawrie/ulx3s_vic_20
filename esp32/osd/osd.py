@@ -211,7 +211,7 @@ class osd:
         import ld_vic20
         s=ld_vic20.ld_vic20(self.spi,self.cs)
         if filename.find("/unexpanded/")>=0 or filename.find("/3k/")>=0:
-          s.loadprg2reset_unexpaned(filename)
+          s.loadprg2reset_unexpanded(filename)
         else:
           s.loadprg2reset(filename)
         del s
