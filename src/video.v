@@ -81,10 +81,10 @@ module video (
   reg [9:0] vBorder_top,  vBorder_bottom;
   always @(posedge clk)
   begin
-    hBorder_left     <= HB+HBadj;
-    hBorder_left2    <= HB-HB2adj*2;
+    hBorder_left     <= {xorigin,4'b0}+HBadj;
+    hBorder_left2    <= {xorigin,4'b0}-HB2adj*2;
     hBorder_right    <= hBorder_left + {cols,4'b0};
-    vBorder_top      <= VB;
+    vBorder_top      <= {yorigin};
     if(chars8x16)
       vBorder_bottom <= vBorder_top + {rows,4'b0};
     else
