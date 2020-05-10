@@ -248,3 +248,12 @@ class ld_vic20:
       print("unrecognized header")
       print("header:", header)
       print("expected:", expect)
+
+  def loadprg(self,filename):
+    f=open(filename,"rb")
+    header=bytearray(2)
+    f.readinto(header)
+    addr=unpack("<H",header)[0]
+    self.cpu_halt()
+    self.load_stream(f,addr)
+    self.cpu_continue()

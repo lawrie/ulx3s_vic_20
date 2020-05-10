@@ -205,6 +205,15 @@ class osd:
         del s
         gc.collect()
 
+      if filename.endswith(".prg"):
+        self.enable[0]=0
+        self.osd_enable(0)
+        import ld_vic20
+        s=ld_vic20.ld_vic20(self.spi,self.cs)
+        s.loadprg(filename)
+        del s
+        gc.collect()
+
   @micropython.viper
   def osd_enable(self, en:int):
     pena = ptr8(addressof(self.spi_enable_osd))
