@@ -19,7 +19,7 @@ module video (
   input         chars8x16,
   input [3:0]   aux_color,
   input [6:0]   xorigin,
-  input [6:0]   yorigin,
+  input [7:0]   yorigin,
   input [6:0]   rows,
   input [6:0]   cols
 );
@@ -29,20 +29,16 @@ module video (
   parameter HFP = 16;
   parameter HBP = 48;
   parameter HT  = HA + HS + HFP + HBP;
-  //parameter HB = 144;
-  parameter HB2adj = 8;
-  //parameter HB2 = HB/2 - HB2adj; // NOTE pixel coarse H-adjust
-  parameter HDELAY = 3;   // NOTE pixel fine H-adjust
-  parameter HBattr = 0;   // NOTE attr coarse H-adjust
-  parameter HBadj = 4;    // NOTE border H-adjust
+  parameter HDELAY = 3;     // NOTE pixel fine H-adjust
+  parameter HBattr = 0;     // NOTE attr coarse H-adjust
+  parameter HBadj  = 50+4;  // NOTE border H-adjust
+  parameter HB2adj = 50-16;
 
   parameter VA = 480;
   parameter VS  = 2;
   parameter VFP = 11;
   parameter VBP = 31;
   parameter VT  = VA + VS + VFP + VBP;
-  //parameter VB = 56;
-  //parameter VB2 = VB/2;
 
   wire [11:0] color_to_rgb [0:15];
   assign color_to_rgb[0]  = 12'b000000000000;
@@ -82,7 +78,7 @@ module video (
   always @(posedge clk)
   begin
     hBorder_left     <= {xorigin,3'b0}+HBadj;
-    hBorder_left2    <= {xorigin,3'b0}-HB2adj*2;
+    hBorder_left2    <= {xorigin,3'b0}+HB2adj;
     hBorder_right    <= hBorder_left + {cols,4'b0};
     vBorder_top      <= {yorigin};
     if(chars8x16)
