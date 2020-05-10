@@ -100,11 +100,13 @@ module video (
   reg R_pixel;
   reg [3:0] R_attr;
   reg [3:0] R_attr_delay;
+  reg       multi_color;
 
   always @(posedge clk) begin
     if (hc[0]) begin
       R_attr_delay <= R_attr;
       fore_color <= R_attr_delay[2:0];
+      multi_color <= R_attr_delay[3];
       
       if (chars8x16)
         vga_addr <= char8x16_row_addr;
@@ -144,9 +146,31 @@ module video (
   wire [4:0] back_g = color_to_rgb[back_color][7:4];
   wire [4:0] back_b = color_to_rgb[back_color][3:0];
 
-  wire [4:0] fore_r = color_to_rgb[fore_color][11:8];
-  wire [4:0] fore_g = color_to_rgb[fore_color][7:4];
-  wire [4:0] fore_b = color_to_rgb[fore_color][3:0];
+  reg [3:0] color_2bit;
+  reg [3:0] R_color_2bit;
+
+  always @(posedge clk) begin
+    if (hc[0]) R_color_2bit <= color_2bit;
+  end
+
+  always @(*) begin
+    if (!x[0]) begin
+      case ({R_pixel, pixel})
+        2'b00: color_2bit = back_color;
+	2'b01: color_2bit = {1'b0, border_color};
+	2'b10: color_2bit = {1'b0, fore_color};
+	2'b11: color_2bit = aux_color;
+      endcase
+    end else begin
+      color_2bit = R_color_2bit;
+    end
+  end
+
+  wire [3:0] char_color = multi_color ? color_2bit : fore_color;
+
+  wire [4:0] fore_r = color_to_rgb[char_color][11:8];
+  wire [3:0] fore_g = color_to_rgb[char_color][7:4];
+  wire [3:0] fore_b = color_to_rgb[char_color][3:0];
 
   wire [3:0] red = border ? border_r : (R_pixel ? fore_r : back_r);
   wire [3:0] green = border ? border_g : (R_pixel ? fore_g : back_g);
