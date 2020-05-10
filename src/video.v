@@ -29,9 +29,9 @@ module video (
   parameter HFP = 16;
   parameter HBP = 48;
   parameter HT  = HA + HS + HFP + HBP;
-  parameter HB = 144;
+  //parameter HB = 144;
   parameter HB2adj = 8;
-  parameter HB2 = HB/2 - HB2adj; // NOTE pixel coarse H-adjust
+  //parameter HB2 = HB/2 - HB2adj; // NOTE pixel coarse H-adjust
   parameter HDELAY = 3;   // NOTE pixel fine H-adjust
   parameter HBattr = 0;   // NOTE attr coarse H-adjust
   parameter HBadj = 4;    // NOTE border H-adjust
@@ -41,8 +41,8 @@ module video (
   parameter VFP = 11;
   parameter VBP = 31;
   parameter VT  = VA + VS + VFP + VBP;
-  parameter VB = 56;
-  parameter VB2 = VB/2;
+  //parameter VB = 56;
+  //parameter VB2 = VB/2;
 
   wire [11:0] color_to_rgb [0:15];
   assign color_to_rgb[0]  = 12'b000000000000;
@@ -95,8 +95,8 @@ module video (
   wire border  = hBorder || vBorder;
 
   // Pixel co-ordinates
-  wire [9:0] x = hc[9:0] - hBorder_left2[9:0];
-  wire [9:0] y = vc[9:0] - vBorder_top[9:0];
+  wire [9:0] x = hc - hBorder_left2;
+  wire [9:0] y = vc - vBorder_top;
 
   wire [15:0] char8x8_addr  = screen_addr + (y[8:4] * cols) + x[8:4];
   wire [15:0] char8x16_addr = screen_addr + (y[8:5] * cols) + x[8:4];
