@@ -45,9 +45,6 @@ module vic20 (
    assign usb_fpga_pu_dp = 1;
    assign usb_fpga_pu_dn = 1;
 
-   // Diagnostics
-   assign leds = {led8, led7, led6, led5, led4, led3, led2, led1};
-   
    // ===============================================================
    // System Clock generation (25MHz)
    // ===============================================================
@@ -228,31 +225,6 @@ module vic20 (
      .restore_key(kbd_restore),
     . backwardsReadingEnabled(1'b1)
    );
-
-   // ===============================================================
-   // LEDs
-   // ===============================================================
-
-   reg        led1;
-   reg        led2;
-   reg        led3;
-   reg        led4;
-   reg        led5;
-   reg        led6;
-   reg        led7;
-   reg        led8;
-
-   always @(posedge clk25)
-     begin
-        led1 <= !via2_irq_n;  // red 
-        led2 <= !via1_nmi_n;  // yellow 
-        led3 <= reset_key;    // green
-        led4 <= reset;        // blue
-	led5 <= kbd_restore;  // red
-	led6 <= 0;            // yellow
-	led7 <= 0;            // green
-	led8 <= 0;            // blue
-     end
 
    // ===============================================================
    // 6502 CPU
@@ -576,4 +548,33 @@ module vic20 (
      .gpdi_dp(gpdi_dp),
      .gpdi_dn(gpdi_dn)
    );
+
+   // ===============================================================
+   // LEDs
+   // ===============================================================
+
+   reg        led1;
+   reg        led2;
+   reg        led3;
+   reg        led4;
+   reg        led5;
+   reg        led6;
+   reg        led7;
+   reg        led8;
+
+   always @(posedge clk25)
+     begin
+        led1 <= !via2_irq_n;  // red
+        led2 <= !via1_nmi_n;  // yellow
+        led3 <= reset_key;    // green
+        led4 <= reset;        // blue
+	led5 <= kbd_restore;  // red
+	led6 <= ~r_inverted;  // yellow
+	led7 <= 0;            // green
+	led8 <= 0;            // blue
+     end
+
+   // Diagnostics
+   assign leds = {led8, led7, led6, led5, led4, led3, led2, led1};
+
 endmodule
