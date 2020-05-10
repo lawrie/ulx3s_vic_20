@@ -128,11 +128,13 @@ module video (
   wire [15:0] attr8x8_addr  = color_ram_addr + (y[8:4] * cols) + xattr_early[7:3];
   wire [15:0] attr8x16_addr = color_ram_addr + (y[8:5] * cols) + xattr_early[7:3];
   reg   [2:0] fore_color;
+  
+  wire [13:0] cha8x8  = {char_rom_addr[15],char_rom_addr[12:0]} + {3'b0,current_char,y[3:1]};
+  wire [13:0] cha8x16 = {char_rom_addr[15],char_rom_addr[12:0]} + {2'b0,current_char,y[4:1]};
+  wire [15:0] char8x8_row_addr  = { cha8x8[13],2'b0, cha8x8[12:0]};
+  wire [15:0] char8x16_row_addr = {cha8x16[13],2'b0,cha8x16[12:0]};
 
-  wire [15:0] char8x8_row_addr  = char_rom_addr + {5'b0, current_char, y[3:1]};
-  wire [15:0] char8x16_row_addr = char_rom_addr + {4'b0, current_char, y[4:1]};
   reg   [7:0] R_pixel_data;
-
   wire pixel = inverted ? R_pixel_data[7] : ~R_pixel_data[7];
 
   reg R_pixel;
