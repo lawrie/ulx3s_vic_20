@@ -10,6 +10,7 @@ module video (
   output        vga_de,
   input  [7:0]  vga_data,
   output reg [15:0] vga_addr,
+  output [7:0]  raster_line,
   input [15:0]  screen_addr,
   input [15:0]  char_rom_addr,
   input [15:0]  color_ram_addr,
@@ -112,6 +113,8 @@ module video (
         R_vBorder <= 1;
   end
   wire border = R_hBorder || R_vBorder;
+
+  assign raster_line = vc[9:2];
 
   // Pixel co-ordinates
   wire [9:0] x = hc - hBorder_left2;

@@ -304,7 +304,10 @@ module vic20 (
    reg [7:0] last_col_out;
    always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
 
-   assign cpu_din = !io_cs_n[0] && address[4] ? via1_dout :
+   wire [7:0] raster_line;
+
+   assign cpu_din = address == 16'h9004 ? raster_line :
+                    !io_cs_n[0] && address[4] ? via1_dout :
                     address == 16'h9121 && rnw ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]} 
                                               : ram_dout;
 
@@ -494,6 +497,7 @@ module vic20 (
      .vga_vs(vsync),
      .vga_addr(vga_addr),
      .vga_data(vid_out),
+     .raster_line(raster_line),
      .screen_addr(r_screen_addr),
      .char_rom_addr(r_char_rom_addr),
      .color_ram_addr(r_color_ram_addr),
