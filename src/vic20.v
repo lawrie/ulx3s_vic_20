@@ -460,12 +460,23 @@ module vic20 (
    reg [3:0]  r_aux_color;
    reg        r_inverted;
    reg        r_chars8x16;
+   reg [6:0]  r_xorigin = 12;
+   reg [6:0]  r_yorigin = 38;
    reg [6:0]  r_cols = 22;
    reg [6:0]  r_rows = 23;
 
    // Set start addresses for screen and character rom
    always @(posedge clk25) begin
      if (!rnw && address[15:4] == 12'h900) begin
+
+       if (address[3:0] == 4'h0) begin
+	 r_xorigin <= cpu_dout[6:0];
+       end
+
+       if (address[3:0] == 4'h1) begin
+	 r_yorigin <= cpu_dout[6:0];
+       end
+
        // Columns and extra bit for screen and color ram address
        if (address[3:0] == 4'h2) begin
          r_screen_addr[9] <= cpu_dout[7];

@@ -18,6 +18,8 @@ module video (
   input         inverted,
   input         chars8x16,
   input [3:0]   aux_color,
+  input [6:0]   xorigin,
+  input [6:0]   yorigin,
   input [6:0]   rows,
   input [6:0]   cols
 );
@@ -28,7 +30,8 @@ module video (
   parameter HBP = 48;
   parameter HT  = HA + HS + HFP + HBP;
   parameter HB = 144;
-  parameter HB2 = HB/2 - 8; // NOTE pixel coarse H-adjust
+  parameter HB2adj = 8;
+  parameter HB2 = HB/2 - HB2adj; // NOTE pixel coarse H-adjust
   parameter HDELAY = 3;   // NOTE pixel fine H-adjust
   parameter HBattr = 8;   // NOTE attr coarse H-adjust
   parameter HBadj = 4;    // NOTE border H-adjust
@@ -74,19 +77,26 @@ module video (
   assign vga_vs = !(vc >= VA + VFP && vc < VA + VFP + VS);
   assign vga_de = !(hc > HA || vc > VA);
 
-  wire hBorder = (hc < (HB + HBadj) || hc >= (HB + HBadj + {cols,4'b0}));
-  reg [9:0] vBorder_right;
+  reg [9:0] hBorder_left, hBorder_right, hBorder_left2;
+  reg [9:0] vBorder_top,  vBorder_bottom;
   always @(posedge clk)
+  begin
+    hBorder_left     <= HB+HBadj;
+    hBorder_left2    <= HB-HB2adj*2;
+    hBorder_right    <= hBorder_left + {cols,4'b0};
+    vBorder_top      <= VB;
     if(chars8x16)
-      vBorder_right <= VB + {rows,4'b0};
+      vBorder_bottom <= vBorder_top + {rows,4'b0};
     else
-      vBorder_right <= VB + {rows,3'b0};
-  wire vBorder = (vc < VB || vc >= vBorder_right);
+      vBorder_bottom <= vBorder_top + {rows,3'b0};
+  end
+  wire hBorder = (hc < hBorder_left || hc >= hBorder_right);
+  wire vBorder = (vc < vBorder_top  || vc >= vBorder_bottom);
   wire border  = hBorder || vBorder;
 
   // Pixel co-ordinates
-  wire [8:0] x = hc[9:1] - HB2;
-  wire [8:0] y = vc[9:1] - VB2;
+  wire [8:0] x = hc[9:1] - hBorder_left2[9:1];
+  wire [8:0] y = vc[9:1] - vBorder_top[9:1];
 
   wire [15:0] char8x8_addr  = screen_addr + (y[7:3] * cols) + x[7:3];
   wire [15:0] char8x16_addr = screen_addr + (y[7:4] * cols) + x[7:3];
