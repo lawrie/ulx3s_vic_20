@@ -291,15 +291,16 @@ class ld_vic20:
       # patched ROM detects expanded RAM as 3k expanded
       self.poke(0xFDAC,bytearray([0x04]))
       self.poke(0xFDC7,bytearray([0xFF]))
-    # for cold boot, delete reset vector at start of 0xA000
-    # it should boot BASIC, not previously loaded ROM
-    self.poke(0xA000,bytearray(16))
-    self.cpu_reset_halt()
-    self.cpu_halt()
-    self.cpu_continue()
-    # wait for READY
-    sleep_ms(3000)
-    self.cpu_halt()
+    ROM = (addr==0x8000 or addr==0xA000 or addr==0xC000 or addr==0xE000)
+    # for cold boot, delete magic value from 0xA004
+    self.poke(0xA004,bytearray(5))
+    if not ROM:
+      self.cpu_reset_halt()
+      self.cpu_halt()
+      self.cpu_continue()
+      # wait for READY
+      sleep_ms(3000)
+      self.cpu_halt()
     # LOAD PRG to RAM
     bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
     # if RAM area loaded, patch RAM as if LOAD command executed
@@ -316,7 +317,7 @@ class ld_vic20:
       self.poke(0x33,endmem)
       self.type_run()
     # if ROM cartridge content loaded, start it with reset
-    if addr==0xA000:
+    if ROM:
       self.cpu_reset_halt()
       self.cpu_halt()
     self.cpu_continue()
