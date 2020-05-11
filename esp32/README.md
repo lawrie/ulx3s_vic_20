@@ -1,7 +1,7 @@
 # ESP32 OSD
 
 
-# LOAD *.PRG files
+# LOAD *.prg files
 
 ESP32 "osd.py" and "ld_vic20.py" have some "knowledge base"
 to auto-load single-part PRG files by reading PRG header,
@@ -32,7 +32,7 @@ bytes), then it can be converted to PRG by prepending 0xA000 header:
     cat a000.prg quikman-rom.a0 > quikman-rom.prg
 
 
-# LOAD *.VSF file
+# LOAD *.vsf file
 
 VSF is VICE eumlator snapshot file.
 
