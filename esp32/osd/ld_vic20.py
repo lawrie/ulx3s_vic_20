@@ -302,6 +302,8 @@ class ld_vic20:
     # patch ROM to become unexpanded
     self.poke(0xFDAC,bytearray([0x10]))
     self.poke(0xFDC7,bytearray([0xFF]))
+    # delete reset vector in RAM
+    self.poke(0xA000,bytearray(16))
     self.cpu_reset_halt()
     self.cpu_halt()
     self.cpu_continue()
@@ -313,6 +315,8 @@ class ld_vic20:
     # write normal ROM content
     self.poke(0xFDAC,bytearray([0x04]))
     self.poke(0xFDC7,bytearray([0x21]))
+    # delete reset vector in RAM
+    self.poke(0xA000,bytearray(16))
     self.cpu_reset_halt()
     self.cpu_halt()
     self.cpu_continue()
