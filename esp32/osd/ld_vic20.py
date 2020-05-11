@@ -272,15 +272,39 @@ class ld_vic20:
     self.cpu_continue()
 
 
+  # "intelligent" PRG loader
   def loadprg(self,filename):
     f=open(filename,"rb")
     header=bytearray(2)
     f.readinto(header)
     addr=unpack("<H",header)[0]
     self.cpu_halt()
+    # normal ROM detects expanded RAM
+    self.poke(0xFDAC,bytearray([0x04]))
+    self.poke(0xFDC7,bytearray([0x21]))
+    # from LOAD start address determine unexpanded or expanded
+    if addr==0x1001:
+      # patched ROM detects expanded RAM as unexpanded
+      self.poke(0xFDAC,bytearray([0x10]))
+      self.poke(0xFDC7,bytearray([0xFF]))
+    if addr==0x401:
+      # patched ROM detects expanded RAM as 3k expanded
+      self.poke(0xFDAC,bytearray([0x04]))
+      self.poke(0xFDC7,bytearray([0xFF]))
+    # for cold boot, delete reset vector at start of 0xA000
+    # it should boot BASIC, not previously loaded ROM
+    self.poke(0xA000,bytearray(16))
+    self.cpu_reset_halt()
+    self.cpu_halt()
+    self.cpu_continue()
+    # wait for READY
+    sleep_ms(3000)
+    self.cpu_halt()
+    # LOAD PRG to RAM
     bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
+    # if RAM area loaded, patch RAM as if LOAD command executed
     if addr+bytes<=0x9000:
-      # perform NEW
+      #print("set pointers after LOAD %04X-%04X" % (addr,addr+bytes))
       self.poke(0x7A,pack("<H",addr-1))
       self.poke(0x2B,pack("<H",addr))
       self.poke(0x2D,pack("<H",addr+bytes))
@@ -291,34 +315,9 @@ class ld_vic20:
       self.peek(0x37,endmem)
       self.poke(0x33,endmem)
       self.type_run()
+    # if ROM cartridge content loaded, start it with reset
     if addr==0xA000:
       self.cpu_reset_halt()
       self.cpu_halt()
     self.cpu_continue()
     return bytes
-
-  def loadprg2reset_unexpanded(self,filename):
-    self.cpu_halt()
-    # patch ROM to become unexpanded
-    self.poke(0xFDAC,bytearray([0x10]))
-    self.poke(0xFDC7,bytearray([0xFF]))
-    # delete reset vector in RAM
-    self.poke(0xA000,bytearray(16))
-    self.cpu_reset_halt()
-    self.cpu_halt()
-    self.cpu_continue()
-    sleep_ms(3000)
-    self.loadprg(filename)
-
-  def loadprg2reset(self,filename):
-    self.cpu_halt()
-    # write normal ROM content
-    self.poke(0xFDAC,bytearray([0x04]))
-    self.poke(0xFDC7,bytearray([0x21]))
-    # delete reset vector in RAM
-    self.poke(0xA000,bytearray(16))
-    self.cpu_reset_halt()
-    self.cpu_halt()
-    self.cpu_continue()
-    sleep_ms(3000)
-    self.loadprg(filename)
