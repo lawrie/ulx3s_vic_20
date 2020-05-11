@@ -41,9 +41,9 @@ char, basic and kernal ROMs can be converted to PRG in similar way
     echo -ne "\x00\x80" > 8000.prg
     cat 8000.prg characters.901460-03.bin > characters.901460-03.prg
     echo -ne "\x00\xC0" > c000.prg
-    cat c000.prg basic.901486-01.prg > basic.901486-01.prg
+    cat c000.prg basic.901486-01.bin      > basic.901486-01.prg
     echo -ne "\x00\xE0" > e000.prg
-    cat e000.prg kernal.901486-07.bin > kernal.901486-07.prg
+    cat e000.prg kernal.901486-07.bin     > kernal.901486-07.prg
 
 # LOAD *.vsf file
 
