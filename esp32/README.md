@@ -36,6 +36,10 @@ then it can be converted to PRG by prepending 0xA000 header:
     echo -ne "\x00\xA0" > a000.prg
     cat a000.prg quikman-rom.a0 > quikman-rom.prg
 
+kernal ROM can be converted to PRG in similar way
+
+    echo -ne "\x00\xA0" > e000.prg
+    cat e000.prg kernal.901486-07.bin > kernal.901486-07.prg
 
 # LOAD *.vsf file
 
