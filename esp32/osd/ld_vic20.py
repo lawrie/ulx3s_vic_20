@@ -273,8 +273,7 @@ class ld_vic20:
 
 
   # "intelligent" PRG loader
-  def loadprg(self,filename):
-    f=open(filename,"rb")
+  def loadprg_stream(self,f):
     header=bytearray(2)
     f.readinto(header)
     addr=unpack("<H",header)[0]
@@ -322,3 +321,6 @@ class ld_vic20:
       self.cpu_halt()
     self.cpu_continue()
     return bytes
+
+  def loadprg(self,filename):
+    return self.loadprg_stream(open(filename,"rb"))
