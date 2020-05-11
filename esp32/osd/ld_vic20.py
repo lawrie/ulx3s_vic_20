@@ -263,9 +263,8 @@ class ld_vic20:
     self.cs.off()
 
 
-  def type_run(self):
+  def type(self,keybuf):
     # fill keyboard buffer as if RUN <ENTER> has been typed
-    keybuf="RUN\r"
     self.cpu_halt()
     self.poke(0x277,keybuf)
     self.poke(0xC6,bytearray([len(keybuf)]))
@@ -299,6 +298,13 @@ class ld_vic20:
       self.cpu_continue()
       # wait for READY
       sleep_ms(3000)
+      # move cursor 10 lines down,
+      # if some games load over the screen,
+      # typing RUN above may spoil the code.
+      self.cpu_halt()
+      self.type("\r\r\r\r\r\r\r\r\r\r")
+      self.cpu_continue()
+      sleep_ms(100)
       self.cpu_halt()
     # LOAD PRG to RAM
     bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
@@ -314,7 +320,7 @@ class ld_vic20:
       endmem=bytearray(2)
       self.peek(0x37,endmem)
       self.poke(0x33,endmem)
-      self.type_run()
+      self.type("RUN\r")
     # if ROM cartridge content loaded, start it with reset
     if ROM:
       self.cpu_reset_halt()
