@@ -287,12 +287,18 @@ module vic20 (
 
    wire [15:0] vga_addr;
    wire [7:0] vid_out;
+   
+   wire address_rom = address[15:12]==4'h8 
+                   || address[15:12]==4'hC
+                   || address[15:12]==4'hD
+                   || address[15:12]==4'hE
+                   || address[15:12]==4'hF;
 
    dpram #(
      .MEM_INIT_FILE("../roms/vic20.mem")
    )ram64(
      .clk_a(clk25),
-     .we_a(R_cpu_control[1] ? spi_ram_wr && spi_ram_addr[31:24] == 8'h00 : !rnw),
+     .we_a(R_cpu_control[1] ? spi_ram_wr && spi_ram_addr[31:24] == 8'h00 : !rnw && address_rom == 1'b0),
      .addr_a(R_cpu_control[1] ? spi_ram_addr[15:0] : address),
      .din_a(R_cpu_control[1] ? spi_ram_di : cpu_dout),
      .dout_a(ram_dout),
