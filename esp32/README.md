@@ -34,7 +34,7 @@ bytes), then it can be converted to PRG by prepending 0xA000 header:
 
 # LOAD *.vsf file
 
-VSF is VICE eumlator snapshot file.
+VSF is VICE eumulator snapshot file.
 
 On PC Install "vice" emulator
 
