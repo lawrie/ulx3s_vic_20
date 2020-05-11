@@ -11,7 +11,7 @@ and auto-typing "RUN".
 
 If address is 0xA000, PRG is assumed to have ROM cartridge
 content, then WARM RESET is issued immediately after loading.
-VIC-20 ROM will starts cartrdige ROM after boot if its reset
+VIC-20 ROM starts cartrdige ROM after boot if its reset
 vector is autodetected.
 
 PRG file contains 2-byte header which is (low,high) byte of
