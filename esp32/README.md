@@ -1,8 +1,42 @@
 # ESP32 OSD
 
-# on PC
 
-Install "vice" emulator
+# LOAD *.PRG files
+
+ESP32 "osd.py" and "ld_vic20.py" have some "knowledge base"
+to auto-load single-part PRG files by reading PRG header,
+patching ROM, issuing COLD RESET, loading data to RAM, 
+patching RAM pointers to look as if "LOAD" command was done,
+and auto-typing "RUN".
+
+If address is 0xA000, PRG is assumed to have ROM cartridge
+content, then WARM RESET is issued immediately after loading.
+VIC-20 ROM will starts cartrdige ROM after boot if its reset
+vector is autodetected.
+
+PRG file contains 2-byte header which is (low,high) byte of
+starting address, followed by data until EOF.
+PRG may have header to load from any address,
+but most single-part PRG files have one of the typical
+header values:
+
+    0x1001 unexpanded
+    0x0401 3k expanded
+    0x1201 8k expanded or more
+    0xA000 cadtridge
+
+If there's ROM file file without header (its size is usually 4096 or 8192
+bytes), then it can be converted to PRG by prepending 0xA000 header:
+
+    echo -ne "\x00\xA0" > a000.prg
+    cat a000.prg quikman-rom.a0 > quikman-rom.prg
+
+
+# LOAD *.VSF file
+
+VSF is VICE eumlator snapshot file.
+
+On PC Install "vice" emulator
 
     apt-get install vice
 
