@@ -25,8 +25,13 @@ header values:
     0x1201 8k expanded or more
     0xA000 cadtridge
 
-If there's ROM file file without header (its size is usually 4096 or 8192
-bytes), then it can be converted to PRG by prepending 0xA000 header:
+If there's raw cartridge ROM file file without PRG header,
+then file length is usually exactly 4096 or 8192 bytes and
+starts with this (from byte 4 it has 5 "magic" bytes)
+
+    0x** 0x** 0x** 0x** 0x41 0x30 0xc3 0xc2 0xcd 0x**
+
+then it can be converted to PRG by prepending 0xA000 header:
 
     echo -ne "\x00\xA0" > a000.prg
     cat a000.prg quikman-rom.a0 > quikman-rom.prg
