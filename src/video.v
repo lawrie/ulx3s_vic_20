@@ -32,7 +32,7 @@ module video (
   parameter HT  = HA + HS + HFP + HBP;
   parameter HDELAY = 3;     // NOTE pixel fine H-adjust
   parameter HBattr = 0;     // NOTE attr coarse H-adjust
-  parameter HBadj  = 100+4; // NOTE border H-adjust
+  parameter HBadj  = 100+3; // NOTE border H-adjust
   parameter HB2adj = 100-16;
 
   parameter VA = 480;
@@ -95,7 +95,7 @@ module video (
   begin
     hBorder_left     <= {xorigin,3'b0}+HBadj;
     hBorder_left2    <= {xorigin,3'b0}+HB2adj;
-    hBorder_right    <= hBorder_left + {cols,4'b0} - 1;
+    hBorder_right    <= hBorder_left + {cols,4'b0};
     vBorder_top      <= {yorigin,1'b0}+VBadj;
     if(chars8x16)
       vBorder_bottom <= vBorder_top + {rows,4'd0} - 17;
