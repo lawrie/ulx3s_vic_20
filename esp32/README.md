@@ -36,8 +36,12 @@ then it can be converted to PRG by prepending 0xA000 header:
     echo -ne "\x00\xA0" > a000.prg
     cat a000.prg quikman-rom.a0 > quikman-rom.prg
 
-kernal ROM can be converted to PRG in similar way
+char, basic and kernal ROMs can be converted to PRG in similar way
 
+    echo -ne "\x00\x80" > 8000.prg
+    cat 8000.prg characters.901460-03.bin > characters.901460-03.prg
+    echo -ne "\x00\xC0" > c000.prg
+    cat c000.prg basic.901486-01.prg > basic.901486-01.prg
     echo -ne "\x00\xE0" > e000.prg
     cat e000.prg kernal.901486-07.bin > kernal.901486-07.prg
 
