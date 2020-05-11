@@ -327,6 +327,6 @@ class osd:
   #    self.cs.off()
 
 #os.mount(SDCard(slot=3),"/sd")
-#ecp5.prog("/sd/orao/bitstreams/ulx3s_85f_orao.bit")
+ecp5.prog("/vic20/bitstreams/ulx3s_vic20_32K_45f.bit")
 gc.collect()
 vic20=osd()

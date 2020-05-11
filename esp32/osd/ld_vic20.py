@@ -4,7 +4,7 @@
 # AUTHOR=EMARD
 # LICENSE=BSD
 
-from struct import unpack
+from struct import pack,unpack
 from time import sleep_ms
 
 class ld_vic20:
@@ -30,6 +30,7 @@ class ld_vic20:
       else:
         break
     self.cs.off()
+    return bytes_loaded
 
   # read from SPI RAM -> write to file
   def save_stream(self, filedata, addr=0, length=1024, blocksize=1024):
@@ -255,6 +256,12 @@ class ld_vic20:
     self.spi.write(data)
     self.cs.off()
 
+  def peek(self,addr,buffer):
+    self.cs.on()
+    self.spi.write(bytearray([1,(addr>>24)&0xFF,(addr>>16)&0xFF,(addr>>8)&0xFF,addr&0xFF,0]))
+    self.spi.readinto(buffer)
+    self.cs.off()
+
 
   def type_run(self):
     # fill keyboard buffer as if RUN <ENTER> has been typed
@@ -271,9 +278,24 @@ class ld_vic20:
     f.readinto(header)
     addr=unpack("<H",header)[0]
     self.cpu_halt()
-    self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
-    self.type_run()
+    bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
+    if addr+bytes<=0x9000:
+      # perform NEW
+      self.poke(0x7A,pack("<H",addr-1))
+      self.poke(0x2B,pack("<H",addr))
+      self.poke(0x2D,pack("<H",addr+bytes))
+      # perform CLR
+      self.poke(0x2F,pack("<H",addr+bytes))
+      self.poke(0x31,pack("<H",addr+bytes))
+      endmem=bytearray(2)
+      self.peek(0x37,endmem)
+      self.poke(0x33,endmem)
+      self.type_run()
+    if addr==0xA000:
+      self.cpu_reset_halt()
+      self.cpu_halt()
     self.cpu_continue()
+    return bytes
 
   def loadprg2reset_unexpanded(self,filename):
     self.cpu_halt()
