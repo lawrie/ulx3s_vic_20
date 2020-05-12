@@ -310,10 +310,10 @@ module vic20 (
    always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
 
    assign cpu_din =  address == 16'h9004 ? raster_line
-                  : via_cs && address[4]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
+                  : via_cs && address[4]==1 && (address[3:0] == 4'h1 || address[3:0] == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
                   : via_cs && address[4]==1 ? via1_dout
-                  : via_cs && address[5]==1 && (address[3:0] == 4'h0                   ) && last_ddr2b_out[7]   ==  1'b0 ? {~btn[6],7'b1111111}
-                  : via_cs && address[5]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr2a_out      == 8'h00 ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}
+                  : via_cs && address[5]==1 && (address[3:0] == 4'h0                        ) && last_ddr2b_out[7]   ==  1'b0 ? {~btn[6],7'b1111111}
+                  : via_cs && address[5]==1 && (address[3:0] == 4'h1 || address[3:0] == 4'hF) && last_ddr2a_out      == 8'h00 ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}
                   : via_cs && address[5]==1 ? via2_dout
                   : ram_dout;
 
