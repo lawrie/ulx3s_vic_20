@@ -22,6 +22,8 @@ import gc
 class osd:
   def __init__(self):
     self.url="http://www.zimmers.net/anonftp/pub/cbm/vic20/games/unexpanded"
+    #self.url="http://www.zimmers.net/anonftp/pub/cbm/vic20/demos.basic/unexpanded"
+    #self.url="http://www.zimmers.net/anonftp/pub/cbm/vic20/games.basic/unexpanded"
     self.screen_x = const(64)
     self.screen_y = const(20)
     self.cwd = "/"
@@ -323,6 +325,7 @@ class osd:
               if len(n2)>1:
                 print(n2[0])
                 self.direntries.append([n2[0],0,0]) # file
+                gc.collect()
         else:
           break
 
