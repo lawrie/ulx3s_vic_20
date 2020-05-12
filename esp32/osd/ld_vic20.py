@@ -298,11 +298,12 @@ class ld_vic20:
       self.cpu_continue()
       # wait for READY
       sleep_ms(3000)
-      # move cursor 10 lines down,
-      # if some games load over the screen,
-      # typing RUN above may spoil the code.
+      # move cursor few lines down,
+      # some code may be larger than free RAM and load over upper part of the screen.
+      # typing "RUN" on the lower part of the screen won't spoil the code.
+      # Works for "Crazy Cavey".
       self.cpu_halt()
-      self.type("\r\r\r\r\r\r\r\r\r\r")
+      self.type("?\r?\r?\r")
       self.cpu_continue()
       sleep_ms(100)
       self.cpu_halt()
@@ -320,6 +321,8 @@ class ld_vic20:
       endmem=bytearray(2)
       self.peek(0x37,endmem)
       self.poke(0x33,endmem)
+      self.poke(0x3E,bytearray([0])) # clear continue pointer high byte
+      self.poke(0x10,bytearray([0])) # clear subscript/FNX flag
       self.type("RUN\r")
     # if ROM cartridge content loaded, start it with reset
     if ROM:
