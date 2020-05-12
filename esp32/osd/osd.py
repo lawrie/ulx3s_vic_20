@@ -112,7 +112,14 @@ class osd:
 
   def select_entry(self):
     if self.direntries[self.fb_cursor][1]: # is it directory
-      self.cwd = self.fullpath(self.direntries[self.fb_cursor][0])
+      oldselected = self.fb_selected - self.fb_topitem
+      self.fb_selected = self.fb_cursor
+      try:
+        self.cwd = self.fullpath(self.direntries[self.fb_cursor][0])
+      except:
+        self.fb_selected = -1
+      self.show_dir_line(oldselected)
+      self.show_dir_line(self.fb_cursor - self.fb_topitem)
       self.init_fb()
       self.read_dir()
       self.show_dir()
