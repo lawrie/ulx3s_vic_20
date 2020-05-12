@@ -73,19 +73,14 @@ module vic20 (
    reg         via1_clken;
    reg         via4_clken;
    wire [1:0]  turbo = 0;
-   reg  [3:0]  io_cs_n;
    wire        p2_h;
    wire [7:0]  v_data = cpu_dout;
    wire [7:0]  ram_dout;
+   wire        via_cs = (address[15:8] == 8'h91);
+   wire        clk_vga = clk25;
 
-   always @(posedge clk25) if (io_cs_n[1] && address[5] && rnw && !(&kbd_row_in)) diag <= {last_col_out, kbd_row_in};
+   always @(posedge clk25) diag <= 0;
        
-   // ===============================================================
-   // VGA Clock generation (25MHz/12.5MHz)
-   // ===============================================================
-
-   wire clk_vga = clk25;
-
    // ===============================================================
    // Joystick for OSD control and games
    // ===============================================================
@@ -262,27 +257,6 @@ module vic20 (
      end
 
    // ===============================================================
-   // Address decoding logic and data in multiplexor
-   // ===============================================================
-
-   always @(posedge clk25) begin
-     if (address[15:13] == 3'b100) //  blk4
-       case (address[12:10])
-         3'b000 : io_cs_n <= 4'b1111;
-         3'b001 : io_cs_n <= 4'b1111;
-         3'b010 : io_cs_n <= 4'b1111;
-         3'b011 : io_cs_n <= 4'b1111;
-         3'b100 : io_cs_n <= 4'b1110; // VIAs
-         3'b101 : io_cs_n <= 4'b1101; // colour RAM
-         3'b110 : io_cs_n <= 4'b1011;
-         3'b111 : io_cs_n <= 4'b0111;
-         default: io_cs_n <= 4'b1111;
-       endcase
-     else
-       io_cs_n <= 4'b1111;
-   end
-
-   // ===============================================================
    // RAM
    // ===============================================================
 
@@ -336,11 +310,11 @@ module vic20 (
    always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
 
    assign cpu_din =  address == 16'h9004 ? raster_line
-                  : io_cs_n[0]==0 && address[4]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
-                  : io_cs_n[0]==0 && address[4]==1 ? via1_dout
-                  : io_cs_n[0]==0 && address[5]==1 && (address[3:0] == 4'h0                   ) && last_ddr2b_out[7]   ==  1'b0 ? {~btn[6],7'b1111111}
-                  : io_cs_n[0]==0 && address[5]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr2a_out      == 8'h00 ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}
-                  : io_cs_n[0]==0 && address[5]==1 ? via2_dout
+                  : via_cs && address[4]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
+                  : via_cs && address[4]==1 ? via1_dout
+                  : via_cs && address[5]==1 && (address[3:0] == 4'h0                   ) && last_ddr2b_out[7]   ==  1'b0 ? {~btn[6],7'b1111111}
+                  : via_cs && address[5]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr2a_out      == 8'h00 ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}
+                  : via_cs && address[5]==1 ? via2_dout
                   : ram_dout;
 
 
@@ -363,7 +337,7 @@ module vic20 (
       .O_DATA_OE_L(),
       .I_RW_L(rnw),
       .I_CS1(address[4]),
-      .I_CS2_L(io_cs_n[0]),
+      .I_CS2_L(!via_cs),
       .O_IRQ_L(via1_nmi_n),
       .I_CA1(kbd_restore),
       .I_CA2(1'b0),
@@ -395,7 +369,7 @@ module vic20 (
       .O_DATA_OE_L(),
       .I_RW_L(rnw),
       .I_CS1(address[5]),
-      .I_CS2_L(io_cs_n[0]),
+      .I_CS2_L(!via_cs),
       .O_IRQ_L(via2_irq_n),
       .I_CA1(1'b0),
       .I_CA2(1'b0),
