@@ -57,7 +57,6 @@ module vic20 (
      .locked(locked)
    );
 
-   always @(posedge clk25) if (io_cs_n[1] && address[5] && rnw && !(&kbd_row_in)) diag <= {last_col_out, kbd_row_in};
 
    // ===============================================================
    // Wires/Reg definitions
@@ -78,6 +77,8 @@ module vic20 (
    wire        p2_h;
    wire [7:0]  v_data = cpu_dout;
    wire [7:0]  ram_dout;
+
+   always @(posedge clk25) if (io_cs_n[1] && address[5] && rnw && !(&kbd_row_in)) diag <= {last_col_out, kbd_row_in};
        
    // ===============================================================
    // VGA Clock generation (25MHz/12.5MHz)
@@ -265,9 +266,7 @@ module vic20 (
    // ===============================================================
 
    always @(posedge clk25) begin
-     io_cs_n <= "1111";
-
-     if (address[15:13]  == 3'b100) begin //  blk4
+     if (address[15:13] == 3'b100) //  blk4
        case (address[12:10])
          3'b000 : io_cs_n <= 4'b1111;
          3'b001 : io_cs_n <= 4'b1111;
@@ -277,8 +276,10 @@ module vic20 (
          3'b101 : io_cs_n <= 4'b1101; // colour RAM
          3'b110 : io_cs_n <= 4'b1011;
          3'b111 : io_cs_n <= 4'b0111;
+         default: io_cs_n <= 4'b1111;
        endcase
-     end
+     else
+       io_cs_n <= 4'b1111;
    end
 
    // ===============================================================
@@ -307,15 +308,41 @@ module vic20 (
      .dout_b(vid_out)
    );
 
-   reg [7:0] last_col_out;
-   always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
-
    wire [7:0] raster_line;
 
-   assign cpu_din = address == 16'h9004 ? raster_line :
-                    !io_cs_n[0] && address[4] ? via1_dout :
-                    address == 16'h9121 && rnw ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]} 
-                                              : ram_dout;
+   /* VIC20 Keyboard Matrix
+   9
+   1  Write to Port B($9120)column
+   2  Read from Port A($9121)row
+   1
+      7   6   5   4   3   2   1   0
+     -------------------------------- 9120
+   7| F7  F5  F3  F1  CDN CRT RET DEL    CRT=Cursor-Right, CDN=Cursor-Down
+   6| HOM UA  =   RSH /   ;   *   BP     BP=British Pound, RSH=Should be Right-SHIFT,
+   5| -   @   :   .   ,   L   P   +
+   4| 0   O   K   M   N   J   I   9
+   3| 8   U   H   B   V   G   Y   7
+   2| 6   T   F   C   X   D   R   5      LSH=Should be Left-SHIFT
+   1| 4   E   S   Z   LSH A   W   3      LA=Left Arrow, CTL=Should be CTRL, STP=RUN/STOP
+   0| 2   Q   CBM SPC STP CTL LA  1      CBM=Commodore key
+   */
+   reg [7:0] last_ddr1a_out; // A1
+   always @(posedge clk25) if (address == 16'h9113 && !rnw) last_ddr1a_out <= cpu_dout;
+   reg [7:0] last_ddr2b_out; // B2
+   always @(posedge clk25) if (address == 16'h9122 && !rnw) last_ddr2b_out <= cpu_dout;
+   reg [7:0] last_ddr2a_out; // A2
+   always @(posedge clk25) if (address == 16'h9123 && !rnw) last_ddr2a_out <= cpu_dout;
+   reg [7:0] last_col_out; // B2
+   always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
+
+   assign cpu_din =  address == 16'h9004 ? raster_line
+                  : io_cs_n[0]==0 && address[4]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
+                  : io_cs_n[0]==0 && address[4]==1 ? via1_dout
+                  : io_cs_n[0]==0 && address[5]==1 && (address[3:0] == 4'h0                   ) && last_ddr2b_out[7]   ==  1'b0 ? {~btn[6],7'b1111111}
+                  : io_cs_n[0]==0 && address[5]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr2a_out      == 8'h00 ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}
+                  : io_cs_n[0]==0 && address[5]==1 ? via2_dout
+                  : ram_dout;
+
 
    // ===============================================================
    // 6522 VIAs
@@ -325,7 +352,7 @@ module vic20 (
    wire via1_nmi_n;
    wire [7:0] via2_dout;
    wire via2_irq_n;
-   wire [7:0] via1_pa_in;
+   wire [7:0] via1_pa_in = {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11};
    wire [7:0] via1_pa_out;
 
    m6522 VIA1
