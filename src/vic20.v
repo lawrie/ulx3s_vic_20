@@ -57,7 +57,6 @@ module vic20 (
      .locked(locked)
    );
 
-
    // ===============================================================
    // Wires/Reg definitions
    // TODO: reorganize so all defined here
@@ -68,7 +67,6 @@ module vic20 (
    reg [7:0]   cpu_dout;
    reg [7:0]   vid_dout;
    reg         cpu_clken;
-   reg         cpu_clken1;
    reg         rnw;
    reg         via1_clken;
    reg         via4_clken;
@@ -135,7 +133,7 @@ module vic20 (
    // Clock Enable Generation
    // ===============================================================
 
-   reg [4:0] clkdiv = 5'b00000;  // divider, from 25MHz down to 1, 2, 4 or 8MHz
+   reg [4:0] clkdiv = 5'b00000;  // divider, from 25MHz down to 1, 2, 4MHz
 
    always @(posedge clk25) begin
       if (clkdiv == 24)
@@ -162,7 +160,6 @@ module vic20 (
              via4_clken <=                      (clkdiv[4] == 0) & ~R_cpu_control[1];
           end
       endcase
-      cpu_clken1 <= cpu_clken;
    end
 
    // ===============================================================
@@ -211,11 +208,9 @@ module vic20 (
    keyboard kbd (
      .clk(clk25),
      .ps2_key(ps2_key),
-     .pbi({last_col_out[3], last_col_out[6:4], last_col_out[7], last_col_out[2:0]}),
-     //.pbi({kbd_col_out_s[3], kbd_col_out_s[6:4], kbd_col_out_s[7], kbd_col_out_s[2:0]}),
+     .pbi({kbd_col_out_s[3], kbd_col_out_s[6:4], kbd_col_out_s[7], kbd_col_out_s[2:0]}),
      .pbo(kbd_col_in),
-     //.pai({kbd_row_out_s[0], kbd_row_out_s[6:1], kbd_row_out_s[7]}),
-     .pai(8'b11111111),
+     .pai({kbd_row_out_s[0], kbd_row_out_s[6:1], kbd_row_out_s[7]}),
      .pao(kbd_row_in),
      .reset_key(reset_key),
      .restore_key(kbd_restore),
@@ -306,8 +301,6 @@ module vic20 (
    always @(posedge clk25) if (address == 16'h9122 && !rnw) last_ddr2b_out <= cpu_dout;
    reg [7:0] last_ddr2a_out; // A2
    always @(posedge clk25) if (address == 16'h9123 && !rnw) last_ddr2a_out <= cpu_dout;
-   reg [7:0] last_col_out; // B2
-   always @(posedge clk25) if (address == 16'h9120 && !rnw) last_col_out <= cpu_dout;
 
    assign cpu_din =  address == 16'h9004 ? raster_line
                   : via_cs && address[4]==1 && (address[3:0] == 4'h1 || address == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
