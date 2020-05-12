@@ -306,6 +306,7 @@ class osd:
         self.direntries.append([fname,1,0]) # directory
       else:
         self.direntries.append([fname,0,stat[6]]) # file
+      gc.collect()
 
   # NOTE: this can be used for debugging
   #def osd(self, a):
@@ -322,7 +323,7 @@ class osd:
   #    self.spi.write(bytearray(a)) # write content
   #    self.cs.off()
 
-#os.mount(SDCard(slot=3),"/sd")
-ecp5.prog("/vic20/bitstreams/ulx3s_vic20_32K_45f.bit")
+os.mount(SDCard(slot=3),"/sd")
+ecp5.prog("/sd/vic20/bitstreams/ulx3s_vic20_32K_85f.bit")
 gc.collect()
 vic20=osd()
