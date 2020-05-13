@@ -18,6 +18,15 @@ reset:
 ; initialize stack
 ldx #$ff
 txs
+sei
+; initialize hardware (screen and VIA)
+	LDX	#(vicvia_init_end-vicvia_init)
+init_loop:
+	LDA	vicvia_init-1,X	; get byte from setup table
+	STA	$9000-1,X	; save byte to Vic chip
+	DEX			; decrement count/index
+	BNE	init_loop       ; loop if more to do
+
 ; initialize CPU status
 lda #$04
 pha
@@ -31,7 +40,71 @@ rti
 irq:
 rti
 
+vicvia_init:
+	.byte	$0C			; interlace and horizontal center [PAL]
+;	.byte	$05			; interlace and horizontal center [NTSC]
+					; bit	function
+					; ---	--------
+					;  7	interlace / non interlace
+					; 6-0	horizontal origin
+	.byte	$26			; vertical origin [PAL]
+;	.byte	$19			; vertical origin [NTSC]
+	.byte	$16			; video address and colums, $9400 for colour RAM
+					; bit	function
+					; ---	--------
+					;  7	video address va9
+					; 6-0	number of columns
+	.byte	$2E			; rows and character size
+					; bit	function
+					; ---	--------
+					;  7	b9 raster line
+					; 6-1	number of rows
+					;  0	8x16 / 8x8 characters
+	.byte	$00			; raster line
+	.byte	$C0			; video memory addresses, RAM $1000, ROM $8000
+					; bit	function
+					; ---	--------
+					;  7	must be 1
+					; 6-4	video memory address va12-va10
+					; 3-0	character memory start address
 
+					; 0000 ROM	$8000	set 1 - we use this
+					; 0001  "	$8400
+					; 0010  "	$8800 set 2
+					; 0011  "	$8C00
+					; 1100 RAM	$1000
+					; 1101  "	$1400
+					; 1110  "	$1800
+					; 1111  "	$1C00
+
+	.byte	$00			; light pen horizontal position
+	.byte	$00			; light pen vertical position
+
+	.byte	$00			; paddle X
+	.byte	$00			; paddle Y
+	.byte	$00			; oscillator 1 frequency
+	.byte	$00			; oscillator 2 frequency
+	.byte	$00			; oscillator 3 frequency
+	.byte	$00			; noise source frequency
+	.byte	$00			; aux colour and volume
+					; bit	function
+					; ---	--------
+					; 7-4	auxiliary colour information
+					; 3-0	volume
+	.byte	$1B			; screen and border colour
+					; bit	function
+					; ---	--------
+					; 7-4	background colour
+					;  3	inverted or normal mode
+					; 2-0	border colour
+
+; VIA1
+.byte $00, $00, $00, $00, $00, $00, $00, $00
+.byte $00, $00, $00, $00, $00, $00, $00, $00
+; VIA2
+.byte $00, $00, $00, $00, $00, $00, $00, $00
+.byte $00, $00, $00, $00, $00, $00, $00, $00
+vicvia_init_end:
 
 .dsb $fffa-* ; Pad with zeroes from PC to $fffa
 vectors:
