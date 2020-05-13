@@ -290,6 +290,7 @@ class ld_vic20:
       self.poke(0xFDAC,bytearray([0x04]))
       self.poke(0xFDC7,bytearray([0xFF]))
     ROM = (addr==0x8000 or addr==0xA000 or addr==0xC000 or addr==0xE000)
+    CART = (addr==0x2000 or addr==0x4000 or addr==0x6000)
     # for cold boot, delete magic value from 0xA004
     self.poke(0xA004,bytearray(5))
     if not ROM:
@@ -298,19 +299,21 @@ class ld_vic20:
       self.cpu_continue()
       # wait for READY
       sleep_ms(3000)
-      # move cursor few lines down,
-      # some code may be larger than free RAM and load over upper part of the screen.
-      # typing "RUN" on the lower part of the screen won't spoil the code.
-      # Works for "Crazy Cavey".
-      self.cpu_halt()
-      self.type("?\r?\r?\r")
-      self.cpu_continue()
-      sleep_ms(100)
+      # code to RUN?
+      if not CART:
+        # move cursor few lines down,
+        # some code may be larger than free RAM and load over upper part of the screen.
+        # typing "RUN" on the lower part of the screen won't spoil the code.
+        # Works for "Crazy Cavey".
+        self.cpu_halt()
+        self.type("?\r?\r?\r")
+        self.cpu_continue()
+        sleep_ms(100)
       self.cpu_halt()
     # LOAD PRG to RAM
     bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
     # if RAM area loaded, patch RAM as if LOAD command executed
-    if addr+bytes<=0x9000:
+    if addr+bytes<=0x9000 and (not CART):
       #print("set pointers after LOAD %04X-%04X" % (addr,addr+bytes))
       self.poke(0x7A,pack("<H",addr-1))
       self.poke(0x2B,pack("<H",addr))
