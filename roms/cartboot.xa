@@ -7,6 +7,7 @@
 
 #define romstart $e000
 #define screen $1000
+#define colors $9400
 
 ; *** PRG header start ***
 *=romstart-2
@@ -33,21 +34,21 @@ init_loop:
         LDX    #$00
 cls_loop:
         LDA    #$20         ; space
-        STA    $1000-1,X
-        STA    $1100-1,X
+        STA    screen-1,X
+        STA    screen+256-1,X
         LDA    #$00         ; black on white
-        STA    $9400-1,X
-        STA    $9500-1,X
+        STA    colors-1,X
+        STA    colors+256-1,X
         DEX
         BNE    cls_loop
 
 ; message on the screen
-	LDX	#(screen_message_end-screen_message)
+	LDX	#(screen_message_end-screen_message)/2
 message_loop:
 	LDA	screen_message-1,X	; get byte from message rom
 	STA	screen-1,X		; save byte to video ram
-	LDA	screen_message2-1,X	; get byte from message rom
-	STA	screen-1+11*22,X	; save byte to video ram
+	LDA	screen_message+(screen_message_end-screen_message)/2-1,X	; get byte from message rom
+	STA	screen+(screen_message_end-screen_message)/2-1,X	; save byte to video ram
 	DEX				; decrement count/index
 	BNE	message_loop    	; loop if more to do
 
@@ -129,7 +130,6 @@ vicvia_init:
 vicvia_init_end:
 nop
 
-; max 11 lines
 screen_message:
 .byte "*** CART BOOT  ROM ***"
 .byte "JMP ($A000)           "
@@ -142,10 +142,6 @@ screen_message:
 .byte "KEYQUEST            8K"
 .byte "DEADLY DUCK         8K"
 .byte "MOTOCROSS RACER     8K"
-screen_message_end:
-
-; max 11 lines, must be same size as message above
-screen_message2:
 .byte "RIVER RESCUE        8K"
 .byte "ROBIN HOOD          8K"
 .byte "SERPENTINE          8K"
@@ -154,10 +150,11 @@ screen_message2:
 .byte "MOUNTAIN KING      16K"
 .byte "SKYBLAZER          16K"
 .byte "SQUISH'EM          16K"
+.byte "                      "
 .byte "WWW.ZIMMERS.NET/      "
 .byte "ANONFTP/PUB/CBM/VIC20/"
 .byte "ROMS                  "
-screen_message2_end:
+screen_message_end:
 
 irq:
 	PHA				; save A
