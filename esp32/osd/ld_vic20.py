@@ -310,7 +310,7 @@ class ld_vic20:
     # LOAD PRG to RAM
     bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
     # if RAM area loaded, patch RAM as if LOAD command executed
-    if addr+bytes<=0x9000:
+    if addr+bytes<=0x9000 and (addr&1)==1:
       #print("set pointers after LOAD %04X-%04X" % (addr,addr+bytes))
       self.poke(0x7A,pack("<H",addr-1))
       self.poke(0x2B,pack("<H",addr))
