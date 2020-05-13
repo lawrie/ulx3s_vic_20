@@ -1,4 +1,4 @@
-; this dummy kernel ROM wthout BASIC ROM (nobasic.xa)
+; this dummy kernel ROM, without BASIC ROM (nobasic.xa),
 ; can boot few "supported" ROM carts like 
 ; "alien blitz.prg" 4K and "choplifter.prg" 8K
 
