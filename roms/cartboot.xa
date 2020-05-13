@@ -58,10 +58,6 @@ php
 ; jump to CART
 jmp ($a000)
 
-nmi:
-sei
-jmp ($0318)
-
 vicvia_init:
 	.byte	$0C			; interlace and horizontal center [PAL]
 ;	.byte	$05			; interlace and horizontal center [NTSC]
@@ -179,6 +175,9 @@ irq:
 irqvec:
 	JMP	($0314)			; do IRQ vector (iIRQ)
 
+nmi:
+	sei
+	jmp	($0318)
 
 
 .dsb $fffa-* ; Pad with zeroes from PC to $fffa
