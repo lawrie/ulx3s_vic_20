@@ -3,7 +3,7 @@
 ; "alien blitz.prg" 4K and "choplifter.prg" 8K
 
 ; usage
-; xa cartboot.xa -o cartboot-e000.prg
+; xa cartboot-e000.xa -o cartboot-e000.prg
 
 #define romstart $e000
 #define screen   $1000
@@ -54,11 +54,11 @@ message_loop:
 	BNE	message_loop    	; loop if more to do
 
 ; initialize CPU status
-	lda #$04
-	pha
-	php
-; jump to CART
-	jmp ($a000)
+;	lda #$04
+;	pha
+;	php
+; jump to CART code
+	jmp ($A000)
 
 screen_message:
 .byte "*** CART BOOT  ROM ***"
@@ -66,6 +66,7 @@ screen_message:
 .byte "                      "
 .byte "RECOMMENDED ROM CARTS:"
 .byte "ALIEN BLITZ         4K"
+.byte "ASTROBLITZ PAL      4K"
 .byte "TERRAGUARD          4K"
 .byte "CHOPLIFTER          8K"
 .byte "DEADLY DUCK         8K"
@@ -80,7 +81,6 @@ screen_message:
 .byte "MOUNTAIN KING      16K"
 .byte "SKYBLAZER          16K"
 .byte "SQUISH'EM          16K"
-.byte "                      "
 .byte "WWW.ZIMMERS.NET/      "
 .byte "ANONFTP/PUB/CBM/VIC20/"
 .byte "ROMS                  "
@@ -178,7 +178,7 @@ nmi:
 	jmp	($0318)
 
 
-	.dsb $fffa-* ; Pad with zeroes from PC to $fffa
+	.dsb $FFFA-* ; Pad with zeroes from PC to $fffa
 vectors:
 	.word nmi
 	.word reset
