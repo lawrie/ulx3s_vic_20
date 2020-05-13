@@ -6,24 +6,25 @@
 ; xa cartboot.xa -o cartboot-e000.prg
 
 #define romstart $e000
-#define screen $1000
-#define colors $9400
+#define screen   $1000
+#define colors   $9400
 
 ; *** PRG header start ***
 *=romstart-2
-.word reset
+	.word reset
 ; *** PRG header end ***
 
 ; *** ROM start ***
 *=romstart
 reset:
 ; initialize stack
-ldx #$ff
-txs
-sei
+	ldx #$ff
+	txs
+	sei
 
 ; initialize hardware (screen and VIA)
 	LDX	#(vicvia_init_end-vicvia_init)
+
 init_loop:
 	LDA	vicvia_init-1,X	; get byte from setup table
 	STA	$9000-1,X	; save byte to Vic chip
@@ -45,19 +46,45 @@ cls_loop:
 ; message on the screen
 	LDX	#(screen_message_end-screen_message)/2
 message_loop:
-	LDA	screen_message-1,X	; get byte from message rom
+	LDA	screen_message-1,X	; get byte from message rom 1st half
 	STA	screen-1,X		; save byte to video ram
-	LDA	screen_message+(screen_message_end-screen_message)/2-1,X	; get byte from message rom
-	STA	screen+(screen_message_end-screen_message)/2-1,X	; save byte to video ram
+	LDA	screen_message+(screen_message_end-screen_message)/2-1,X ; get byte from message rom 2nd half
+	STA	screen+(screen_message_end-screen_message)/2-1,X	 ; save byte to video ram
 	DEX				; decrement count/index
 	BNE	message_loop    	; loop if more to do
 
 ; initialize CPU status
-lda #$04
-pha
-php
+	lda #$04
+	pha
+	php
 ; jump to CART
-jmp ($a000)
+	jmp ($a000)
+
+screen_message:
+.byte "*** CART BOOT  ROM ***"
+.byte "JMP ($A000)           "
+.byte "                      "
+.byte "RECOMMENDED ROM CARTS:"
+.byte "ALIEN BLITZ         4K"
+.byte "TERRAGUARD          4K"
+.byte "CHOPLIFTER          8K"
+.byte "DEADLY DUCK         8K"
+.byte "JELLY MONSTERS      8K"
+.byte "KEYQUEST            8K"
+.byte "MOTOCROSS RACER     8K"
+.byte "RIVER RESCUE        8K"
+.byte "ROBIN HOOD          8K"
+.byte "SERPENTINE          8K"
+.byte "TYPE ATTACK         8K"
+.byte "BATTLEZONE         16K"
+.byte "MOUNTAIN KING      16K"
+.byte "SKYBLAZER          16K"
+.byte "SQUISH'EM          16K"
+.byte "                      "
+.byte "WWW.ZIMMERS.NET/      "
+.byte "ANONFTP/PUB/CBM/VIC20/"
+.byte "ROMS                  "
+screen_message_end:
 
 vicvia_init:
 	.byte	$0C			; interlace and horizontal center [PAL]
@@ -124,37 +151,11 @@ vicvia_init:
 ;       8    9    a    b    c    d    e    f
 ; VIA2
 ;       0    1    2    3    4    5    6    7
-.byte $00, $00, $FF, $00, $00, $00, $00, $00
+.byte $00, $00, $7F, $00, $00, $00, $00, $00
 .byte $00, $00, $00, $40, $DE, $00, $7F, $00
 ;       8    9    a    b    c    d    e    f
 vicvia_init_end:
 nop
-
-screen_message:
-.byte "*** CART BOOT  ROM ***"
-.byte "JMP ($A000)           "
-.byte "                      "
-.byte "RECOMMENDED ROM CARTS:"
-.byte "ALIEN BLITZ         4K"
-.byte "TERRAGUARD          4K"
-.byte "CHOPLIFTER          8K"
-.byte "JELLY MONSTERS      8K"
-.byte "KEYQUEST            8K"
-.byte "DEADLY DUCK         8K"
-.byte "MOTOCROSS RACER     8K"
-.byte "RIVER RESCUE        8K"
-.byte "ROBIN HOOD          8K"
-.byte "SERPENTINE          8K"
-.byte "TYPE ATTACK         8K"
-.byte "BATTLEZONE?        16K"
-.byte "MOUNTAIN KING      16K"
-.byte "SKYBLAZER          16K"
-.byte "SQUISH'EM          16K"
-.byte "                      "
-.byte "WWW.ZIMMERS.NET/      "
-.byte "ANONFTP/PUB/CBM/VIC20/"
-.byte "ROMS                  "
-screen_message_end:
 
 irq:
 	PHA				; save A
@@ -177,8 +178,8 @@ nmi:
 	jmp	($0318)
 
 
-.dsb $fffa-* ; Pad with zeroes from PC to $fffa
+	.dsb $fffa-* ; Pad with zeroes from PC to $fffa
 vectors:
-.word nmi
-.word reset
-.word irq
+	.word nmi
+	.word reset
+	.word irq
