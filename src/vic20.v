@@ -295,21 +295,16 @@ module vic20 (
    1| 4   E   S   Z   LSH A   W   3      LA=Left Arrow, CTL=Should be CTRL, STP=RUN/STOP
    0| 2   Q   CBM SPC STP CTL LA  1      CBM=Commodore key
    */
-   reg [7:0] last_ddr1a_out; // A1
-   always @(posedge clk25) if (address == 16'h9113 && !rnw) last_ddr1a_out <= cpu_dout;
    reg [7:0] last_ddr2b_out; // B2
-   always @(posedge clk25) if (address == 16'h9122 && !rnw) last_ddr2b_out <= cpu_dout;
-   reg [7:0] last_ddr2a_out; // A2
-   always @(posedge clk25) if (address == 16'h9123 && !rnw) last_ddr2a_out <= cpu_dout;
+   always @(posedge clk25) if (via_cs && address[5] && address[3:0] == 4'h2 && !rnw) last_ddr2b_out <= cpu_dout; 
 
-   assign cpu_din =  address == 16'h9004 ? raster_line
-                  : via_cs && address[4]==1 && (address[3:0] == 4'h1 || address[3:0] == 4'hF) && last_ddr1a_out[5:2] ==  4'h0 ? {2'b11, ~btn[1],~btn[5],~btn[4],~btn[3], 2'b11}
-                  : via_cs && address[4]==1 ? via1_dout
-                  : via_cs && address[5]==1 && (address[3:0] == 4'h0                        ) && last_ddr2b_out[7]   ==  1'b0 ? {~btn[6],7'b1111111}
-                  : via_cs && address[5]==1 && (address[3:0] == 4'h1 || address[3:0] == 4'hF) && last_ddr2a_out      == 8'h00 ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]}
-                  : via_cs && address[5]==1 ? via2_dout
-                  : ram_dout;
-
+   assign cpu_din = address == 16'h9004  ? raster_line :
+                    via_cs && address[4] && (address[3:0] == 4'h1 || address[3:0] == 4'hF)  ? {2'b11, ~btn[1], ~btn[5:4], ~btn[3], 2'b11} :
+                    via_cs && address[4] ? via1_dout :
+                    via_cs && address[5] && (address[3:0] == 4'h1 || address[3:0] == 4'hF)  ? {kbd_row_in[0], kbd_row_in[6:1], kbd_row_in[7]} :
+                    via_cs && address[5] &&  address[3:0] == 4'h0 && last_ddr2b_out[7] == 0 ? {~btn[6] /*& kbd_col_in[3]*/, kbd_col_in[6:4], kbd_col_in[7], kbd_col_in[2:0]} :
+                    via_cs && address[5] ? via2_dout :
+                                           ram_dout;
 
    // ===============================================================
    // 6522 VIAs
