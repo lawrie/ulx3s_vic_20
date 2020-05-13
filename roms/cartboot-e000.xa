@@ -60,6 +60,7 @@ message_loop:
 ; jump to CART code
 	jmp ($A000)
 
+; 23 rows, 22 chars in each row
 screen_message:
 .byte "*** CART BOOT  ROM ***"
 .byte "JMP ($A000)           "
