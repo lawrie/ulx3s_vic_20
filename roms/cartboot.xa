@@ -6,6 +6,7 @@
 ; xa cartboot.xa -o cartboot-e000.prg
 
 #define romstart $e000
+#define screen $1000
 
 ; *** PRG header start ***
 *=romstart-2
@@ -19,6 +20,7 @@ reset:
 ldx #$ff
 txs
 sei
+
 ; initialize hardware (screen and VIA)
 	LDX	#(vicvia_init_end-vicvia_init)
 init_loop:
@@ -26,6 +28,28 @@ init_loop:
 	STA	$9000-1,X	; save byte to Vic chip
 	DEX			; decrement count/index
 	BNE	init_loop       ; loop if more to do
+
+; clear screen and set black-on-white colors
+        LDX    #$00
+cls_loop:
+        LDA    #$20         ; space
+        STA    $1000-1,X
+        STA    $1100-1,X
+        LDA    #$00         ; black on white
+        STA    $9400-1,X
+        STA    $9500-1,X
+        DEX
+        BNE    cls_loop
+
+; message on the screen
+	LDX	#(screen_message_end-screen_message)
+message_loop:
+	LDA	screen_message-1,X	; get byte from message rom
+	STA	screen-1,X		; save byte to video ram
+	LDA	screen_message2-1,X	; get byte from message rom
+	STA	screen-1+11*22,X	; save byte to video ram
+	DEX				; decrement count/index
+	BNE	message_loop    	; loop if more to do
 
 ; initialize CPU status
 lda #$04
@@ -35,10 +59,8 @@ php
 jmp ($a000)
 
 nmi:
-rti
-
-irq:
-rti
+sei
+jmp ($0318)
 
 vicvia_init:
 	.byte	$0C			; interlace and horizontal center [PAL]
@@ -61,18 +83,18 @@ vicvia_init:
 					; 6-1	number of rows
 					;  0	8x16 / 8x8 characters
 	.byte	$00			; raster line
-	.byte	$C0			; video memory addresses, RAM $1000, ROM $8000
+	.byte	$C2			; video memory addresses, RAM $1000, ROM $8000
 					; bit	function
 					; ---	--------
 					;  7	must be 1
 					; 6-4	video memory address va12-va10
 					; 3-0	character memory start address
 
-					; 0000 ROM	$8000	set 1 - we use this
+					; 0000 ROM	$8000 set 1
 					; 0001  "	$8400
-					; 0010  "	$8800 set 2
+					; 0010  "	$8800 set 2 <- we use this
 					; 0011  "	$8C00
-					; 1100 RAM	$1000
+					; 1100 RAM	$1000 <- we use this
 					; 1101  "	$1400
 					; 1110  "	$1800
 					; 1111  "	$1C00
@@ -99,12 +121,65 @@ vicvia_init:
 					; 2-0	border colour
 
 ; VIA1
-.byte $00, $00, $00, $00, $00, $00, $00, $00
-.byte $00, $00, $00, $00, $00, $00, $00, $00
+;       0    1    2    3    4    5    6    7
+.byte $00, $00, $00, $80, $00, $00, $00, $00
+.byte $00, $00, $00, $7E, $FE, $00, $7F, $00
+;       8    9    a    b    c    d    e    f
 ; VIA2
-.byte $00, $00, $00, $00, $00, $00, $00, $00
-.byte $00, $00, $00, $00, $00, $00, $00, $00
+;       0    1    2    3    4    5    6    7
+.byte $00, $00, $FF, $00, $00, $00, $00, $00
+.byte $00, $00, $00, $40, $DE, $00, $7F, $00
+;       8    9    a    b    c    d    e    f
 vicvia_init_end:
+nop
+
+; max 11 lines
+screen_message:
+.byte "*** CART BOOT  ROM ***"
+.byte "JMP ($A000)           "
+.byte "                      "
+.byte "RECOMMENDED ROM CARTS:"
+.byte "ALIEN BLITZ         4K"
+.byte "TERRAGUARD          4K"
+.byte "CHOPLIFTER          8K"
+.byte "JELLY MONSTERS      8K"
+.byte "KEYQUEST            8K"
+.byte "DEADLY DUCK         8K"
+.byte "MOTOCROSS RACER     8K"
+screen_message_end:
+
+; max 11 lines, must be same size as message above
+screen_message2:
+.byte "BATTLEZONE?        16K"
+.byte "MOUNTAIN KING      16K"
+.byte "SKYBLAZER          16K"
+.byte "SQUISH'EM          16K"
+.byte "                      "
+.byte "                      "
+.byte "                      "
+.byte "                      "
+.byte "WWW.ZIMMERS.NET/      "
+.byte "ANONFTP/PUB/CBM/VIC20/"
+.byte "ROMS                  "
+screen_message2_end:
+
+irq:
+	PHA				; save A
+	TXA				; copy X
+	PHA				; save X
+	TYA				; copy Y
+	PHA				; save Y
+	TSX				; copy stack pointer
+	LDA	$0100+4,X		; get the stacked status register
+	AND	#$10			; mask the BRK flag bit
+	BEQ	irqvec			; if not BRK go do the hardware IRQ vector
+
+	JMP	($0316)			; else do the BRK vector (iBRK)
+
+irqvec:
+	JMP	($0314)			; do IRQ vector (iIRQ)
+
+
 
 .dsb $fffa-* ; Pad with zeroes from PC to $fffa
 vectors:
