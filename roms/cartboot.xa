@@ -146,14 +146,14 @@ screen_message_end:
 
 ; max 11 lines, must be same size as message above
 screen_message2:
+.byte "RIVER RESCUE        8K"
+.byte "ROBIN HOOD          8K"
+.byte "SERPENTINE          8K"
+.byte "TYPE ATTACK         8K"
 .byte "BATTLEZONE?        16K"
 .byte "MOUNTAIN KING      16K"
 .byte "SKYBLAZER          16K"
 .byte "SQUISH'EM          16K"
-.byte "                      "
-.byte "                      "
-.byte "                      "
-.byte "                      "
 .byte "WWW.ZIMMERS.NET/      "
 .byte "ANONFTP/PUB/CBM/VIC20/"
 .byte "ROMS                  "
