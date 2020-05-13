@@ -292,20 +292,22 @@ class ld_vic20:
     ROM = (addr==0x8000 or addr==0xA000 or addr==0xC000 or addr==0xE000)
     # for cold boot, delete magic value from 0xA004
     self.poke(0xA004,bytearray(5))
-    if not ROM:
+    if (not ROM):
       self.cpu_reset_halt()
       self.cpu_halt()
       self.cpu_continue()
       # wait for READY
       sleep_ms(3000)
-      # move cursor few lines down,
-      # some code may be larger than free RAM and load over upper part of the screen.
-      # typing "RUN" on the lower part of the screen won't spoil the code.
-      # Works for "Crazy Cavey".
-      self.cpu_halt()
-      self.type("?\r?\r?\r")
-      self.cpu_continue()
-      sleep_ms(100)
+      # code to RUN?
+      if (addr&1)==1:
+        # move cursor few lines down,
+        # some code may be larger than free RAM and load over upper part of the screen.
+        # typing "RUN" on the lower part of the screen won't spoil the code.
+        # Works for "Crazy Cavey".
+        self.cpu_halt()
+        self.type("?\r?\r?\r")
+        self.cpu_continue()
+        sleep_ms(100)
       self.cpu_halt()
     # LOAD PRG to RAM
     bytes=self.load_stream(f,addr,maxlen=0x10000,blocksize=1)
