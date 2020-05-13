@@ -1,4 +1,4 @@
-binaries=cartboot-e000.prg nobasic-c000.prg
+binaries=cartboot-fc00.prg nobasic-c000.prg nokernal-e000.prg
 
 all: $(binaries)
 

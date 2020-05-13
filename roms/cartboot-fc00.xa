@@ -3,11 +3,14 @@
 ; "alien blitz.prg" 4K and "choplifter.prg" 8K
 
 ; usage
-; xa cartboot-e000.xa -o cartboot-e000.prg
+; xa cartboot-fc00.xa -o cartboot-fc00.prg
 
-#define romstart $e000
+#define romstart $fc00
 #define screen   $1000
 #define colors   $9400
+#define irqvec   $0314
+#define brkvec   $0316
+#define nmivec   $0318
 
 ; *** PRG header start ***
 *=romstart-2
@@ -18,9 +21,37 @@
 *=romstart
 reset:
 ; initialize stack
+	sei
 	ldx #$ff
 	txs
-	sei
+
+; from address 0 jump back to this ROM
+;        LDA #$4C ; JMP
+;        STA 0
+;        LDA #<reset
+;        STA 1
+;        LDA #>reset
+;        STA 2
+
+; from address 0 jump to CART JMP ($A000)
+        LDA #$6C ; JMP () indirect
+        STA 0
+        LDA #$00
+        STA 1
+	LDA #$A0
+        STA 2
+
+; set empty IRQ handlers
+	LDA #<restore_regs_rti
+	STA irqvec
+	STA brkvec
+	LDA #>restore_regs_rti
+	STA irqvec+1
+	STA brkvec+1
+	LDA #<bare_rti
+	STA nmivec
+	LDA #>bare_rti
+	STA nmivec+1
 
 ; initialize hardware (screen and VIA)
 	LDX	#(vicvia_init_end-vicvia_init)
@@ -31,12 +62,12 @@ init_loop:
 	DEX			; decrement count/index
 	BNE	init_loop       ; loop if more to do
 
-; clear screen and set black-on-white colors
+; set black-on-white colors
         LDX    #$00
 cls_loop:
-        LDA    #$20         ; space
-        STA    screen-1,X
-        STA    screen+256-1,X
+;        LDA    #$20         ; space
+;        STA    screen-1,X
+;        STA    screen+256-1,X
         LDA    #$00         ; black on white
         STA    colors-1,X
         STA    colors+256-1,X
@@ -53,21 +84,15 @@ message_loop:
 	DEX				; decrement count/index
 	BNE	message_loop    	; loop if more to do
 
-; initialize CPU status
-;	lda #$04
-;	pha
-;	php
-; jump to CART code
-	jmp ($A000)
+	JMP ($A000)			; jump to CART code
 
 ; 23 rows, 22 chars in each row
 screen_message:
 .byte "*** CART BOOT  ROM ***"
-.byte "JMP ($A000)           "
-.byte "                      "
 .byte "RECOMMENDED ROM CARTS:"
 .byte "ALIEN BLITZ         4K"
 .byte "ASTROBLITZ PAL      4K"
+.byte "SATELLITE PATROL    4K"
 .byte "TERRAGUARD          4K"
 .byte "DEADLY DUCK         8K"
 .byte "JELLY MONSTERS      8K"
@@ -77,6 +102,7 @@ screen_message:
 .byte "RIVER RESCUE        8K"
 .byte "ROBIN HOOD          8K"
 .byte "SERPENTINE          8K"
+.byte "SCORPION            8K"
 .byte "TYPE ATTACK         8K"
 .byte "BATTLEZONE         16K"
 .byte "MOUNTAIN KING      16K"
@@ -152,11 +178,19 @@ vicvia_init:
 ;       8    9    a    b    c    d    e    f
 ; VIA2
 ;       0    1    2    3    4    5    6    7
-.byte $00, $00, $7F, $00, $00, $00, $00, $00
+.byte $00, $00, $00, $00, $00, $00, $00, $00
 .byte $00, $00, $00, $40, $DE, $00, $7F, $00
 ;       8    9    a    b    c    d    e    f
 vicvia_init_end:
-nop
+
+restore_regs_rti:
+	PLA
+	TAY
+	PLA
+	TAX
+	PLA
+bare_rti:
+	RTI
 
 irq:
 	PHA				; save A
@@ -167,19 +201,16 @@ irq:
 	TSX				; copy stack pointer
 	LDA	$0100+4,X		; get the stacked status register
 	AND	#$10			; mask the BRK flag bit
-	BEQ	irqvec			; if not BRK go do the hardware IRQ vector
-
-	JMP	($0316)			; else do the BRK vector (iBRK)
-
-irqvec:
-	JMP	($0314)			; do IRQ vector (iIRQ)
+	BEQ	rom_irqvec		; if not BRK go do the hardware IRQ vector
+	JMP	(brkvec)		; else do the BRK vector (iBRK)
+rom_irqvec:
+	JMP	(irqvec)		; do IRQ vector (iIRQ)
 
 nmi:
 	sei
-	jmp	($0318)
+	jmp	(nmivec)
 
-
-	.dsb $FFFA-* ; Pad with zeroes from PC to $fffa
+	.dsb $FFFA-* ; Pad with zeroes from PC to $FFFA
 vectors:
 	.word nmi
 	.word reset
