@@ -1,0 +1,40 @@
+; this dummy kernel ROM, without BASIC ROM (nobasic.xa),
+; can boot few "supported" ROM carts like 
+; "alien blitz.prg" 4K and "choplifter.prg" 8K
+
+; usage
+; xa cartboot.xa -o cartboot-e000.prg
+
+#define romstart $e000
+
+; *** PRG header start ***
+*=romstart-2
+.word reset
+; *** PRG header end ***
+
+; *** ROM start ***
+*=romstart
+reset:
+; initialize stack
+ldx #$ff
+txs
+; initialize CPU status
+lda #$04
+pha
+php
+; jump to CART
+jmp ($a000)
+
+nmi:
+rti
+
+irq:
+rti
+
+
+
+.dsb $fffa-* ; Pad with zeroes from PC to $fffa
+vectors:
+.word nmi
+.word reset
+.word irq
