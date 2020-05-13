@@ -1,0 +1,13 @@
+; dummy basic ROM that contains nothing
+
+; usage
+; xa nobasic.xa -o nobasic-c000.prg
+
+#define romstart $c000
+
+; *** PRG header start ***
+*=romstart-2
+.word romstart
+; *** PRG header end ***
+
+.dsb $e000-* ; Pad with zeroes from PC to $e000
