@@ -1,6 +1,6 @@
 ; this dummy kernel ROM, without BASIC ROM (nobasic.xa),
 ; can boot few "supported" ROM carts like 
-; "alien blitz.prg" 4K and "choplifter.prg" 8K
+; "alien blitz.prg" 4K and "serpentine.prg" 8K
 
 ; usage
 ; xa cartboot-fc00.xa -o cartboot-fc00.prg
