@@ -1,0 +1,13 @@
+; dummy kernal ROM that contains nothing
+
+; usage
+; xa nokernal-e000.xa -o nokernal-e000.prg
+
+#define romstart $e000
+
+; *** PRG header start ***
+*=romstart-2
+.word romstart
+; *** PRG header end ***
+
+.dsb $10000-* ; Pad with zeroes from PC to $ffff

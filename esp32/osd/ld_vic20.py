@@ -289,7 +289,7 @@ class ld_vic20:
       # patched ROM detects expanded RAM as 3k expanded
       self.poke(0xFDAC,bytearray([0x04]))
       self.poke(0xFDC7,bytearray([0xFF]))
-    ROM = (addr==0x8000 or addr==0xA000 or addr==0xC000 or addr==0xE000)
+    ROM = (addr==0x8000 or addr==0xA000 or addr>=0xC000)
     CART = (addr==0x2000 or addr==0x4000 or addr==0x6000)
     # for cold boot, delete magic value from 0xA004
     self.poke(0xA004,bytearray(5))

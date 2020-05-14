@@ -1,5 +1,9 @@
 `default_nettype none
-module vic20 (
+module vic20
+#(
+  parameter pal = 1 // 0:NTSC 1:PAL
+)
+(
   // Main clock, 25MHz
   input         clk25_mhz,
   // Buttons
@@ -48,14 +52,32 @@ module vic20 (
    // ===============================================================
    // System Clock generation (25MHz)
    // ===============================================================
-   wire clk25, clk_dvi, locked;
+   wire clk_vga, clk_dvi, locked;
 
-   pll pll_i (
+   generate
+
+   // NTSC 60 Hz
+   if(pal == 0)
+   clk_ntsc
+   clk_ntsc_inst
+   (
      .clkin(clk25_mhz),
-     .clkout0(clk_dvi),
-     .clkout1(clk25),
+     .clkout0(clk_dvi), // 125
+     .clkout1(clk_vga), // 25
      .locked(locked)
    );
+
+   // PAL 50 Hz
+   if(pal == 1)
+   clk_pal
+   clk_pal_inst
+   (
+     .clkin(clk25_mhz),
+     .clkout0(clk_dvi), // 135
+     .clkout1(clk_vga), // 27
+     .locked(locked)
+   );
+   endgenerate
 
    // ===============================================================
    // Wires/Reg definitions
@@ -75,16 +97,15 @@ module vic20 (
    wire [7:0]  v_data = cpu_dout;
    wire [7:0]  ram_dout;
    wire        via_cs = (address[15:8] == 8'h91);
-   wire        clk_vga = clk25;
 
-   always @(posedge clk25) diag <= 0;
+   always @(posedge clk_vga) diag <= 0;
        
    // ===============================================================
    // Joystick for OSD control and games
    // ===============================================================
 
-   wire [6:0] R_btn_joy;
-   always @(posedge clk25)
+   reg [6:0] R_btn_joy;
+   always @(posedge clk_vga)
      R_btn_joy <= btn;
      //R_btn_joy <= btn | { usb_buttons[7],usb_buttons[6],usb_buttons[5],usb_buttons[4],usb_buttons[0],usb_buttons[1],1'b0};
 
@@ -107,7 +128,7 @@ module vic20 (
    )
    spi_ram_btn_inst
    (
-     .clk(clk25),
+     .clk(clk_vga),
      .csn(~wifi_gpio5),
      .sclk(wifi_gpio16),
      .mosi(sd_d[1]), // wifi_gpio4
@@ -123,7 +144,7 @@ module vic20 (
    assign wifi_gpio0 = ~irq;
 
    reg [7:0] R_cpu_control;
-   always @(posedge clk25) begin
+   always @(posedge clk_vga) begin
      if (spi_ram_wr && spi_ram_addr[31:24] == 8'hFF) begin
        R_cpu_control <= spi_ram_di;
      end
@@ -133,10 +154,12 @@ module vic20 (
    // Clock Enable Generation
    // ===============================================================
 
-   reg [4:0] clkdiv = 5'b00000;  // divider, from 25MHz down to 1, 2, 4MHz
+   reg [4:0] clkdiv = 5'b00000;  // divider, from 25MHz NTSC or 27MHz PAL down to 1, 2, 4 or 8MHz
 
-   always @(posedge clk25) begin
-      if (clkdiv == 24)
+   always @(posedge clk_vga) begin
+      // correct should be NTSC:1.023, PAL:1.109 MHz
+      // this is approx    NTSC:1.042, PAL:1.125 MHz
+      if (clkdiv == 23)
         clkdiv <= 0;
       else
         clkdiv <= clkdiv + 1;
@@ -169,7 +192,7 @@ module vic20 (
    reg [15:0] pwr_up_reset_counter = 0; // hold reset low for ~1ms
    wire       pwr_up_reset_n = &pwr_up_reset_counter;
 
-   always @(posedge clk25)
+   always @(posedge clk_vga)
      begin
         if (cpu_clken)
           begin
@@ -199,14 +222,14 @@ module vic20 (
 
    // Get PS/2 keyboard events
    ps2 ps2_kbd (
-      .clk(clk25),
+      .clk(clk_vga),
       .ps2_clk(ps2_clk),
       .ps2_data(ps2_data),
       .ps2_key(ps2_key)
    );
 
    keyboard kbd (
-     .clk(clk25),
+     .clk(clk_vga),
      .ps2_key(ps2_key),
      .pbi({kbd_col_out_s[3], kbd_col_out_s[6:4], kbd_col_out_s[7], kbd_col_out_s[2:0]}),
      .pbo(kbd_col_in),
@@ -229,7 +252,7 @@ module vic20 (
    // Arlet's 6502 core is one of the smallest available
    cpu CPU
      (
-      .clk(clk25),
+      .clk(clk_vga),
       .reset(reset),
       .AB(address_c),
       .DI(cpu_din),
@@ -241,7 +264,7 @@ module vic20 (
       );
 
    // The outputs of Arlets's 6502 core need registing
-   always @(posedge clk25)
+   always @(posedge clk_vga)
      begin
         if (cpu_clken)
           begin
@@ -267,7 +290,7 @@ module vic20 (
    dpram #(
      .MEM_INIT_FILE("../roms/vic20.mem")
    )ram64(
-     .clk_a(clk25),
+     .clk_a(clk_vga),
      .we_a(R_cpu_control[1] ? spi_ram_wr && spi_ram_addr[31:24] == 8'h00 : !rnw && address_rom == 1'b0),
      .addr_a(R_cpu_control[1] ? spi_ram_addr[15:0] : address),
      .din_a(R_cpu_control[1] ? spi_ram_di : cpu_dout),
@@ -296,7 +319,7 @@ module vic20 (
    0| 2   Q   CBM SPC STP CTL LA  1      CBM=Commodore key
    */
    reg [7:0] last_ddr2b_out; // B2
-   always @(posedge clk25) if (via_cs && address[5] && address[3:0] == 4'h2 && !rnw) last_ddr2b_out <= cpu_dout; 
+   always @(posedge clk_vga) if (via_cs && address[5] && address[3:0] == 4'h2 && !rnw) last_ddr2b_out <= cpu_dout; 
 
    assign cpu_din = address == 16'h9004  ? raster_line :
                     via_cs && address[4] && (address[3:0] == 4'h1 || address[3:0] == 4'hF)  ? {2'b11, ~btn[1], ~btn[5:4], ~btn[3], 2'b11} :
@@ -346,7 +369,8 @@ module vic20 (
       .I_P2_H(via1_clken),
       .RESET_L(!reset),
       .ENA_4(via4_clken),
-      .CLK(clk25)
+      //.ENA_4(1),
+      .CLK(clk_vga)
    );
 
    m6522 VIA2
@@ -377,8 +401,9 @@ module vic20 (
       .O_PB_OE_L(kbd_col_out_oe_n),
       .I_P2_H(via1_clken),
       .RESET_L(!reset),
+      //.ENA_4(1),
       .ENA_4(via4_clken),
-      .CLK(clk25)
+      .CLK(clk_vga)
    );
 
    // ===============================================================
@@ -392,7 +417,7 @@ module vic20 (
    reg [3:0] r_amplitude;
    wire [5:0] audio_out;
 
-   always @(posedge clk25) begin
+   always @(posedge clk_vga) begin
      if (!rnw && address[15:8] == 8'h90) begin
        case (address[3:0]) 
          4'ha: r_base_sound <= cpu_dout;
@@ -405,7 +430,7 @@ module vic20 (
    end
 
    audio audio_i (
-     .i_clk(clk25),
+     .i_clk(clk_vga),
      .i_ena4(via4_clken),
      .i_base_sound(r_base_sound),
      .i_alto_sound(r_alto_sound),
@@ -436,7 +461,7 @@ module vic20 (
    reg [6:0]  r_rows = 23;
 
    // Set start addresses for screen and character rom
-   always @(posedge clk25) begin
+   always @(posedge clk_vga) begin
      if (!rnw && address[15:4] == 12'h900) begin
 
        if (address[3:0] == 4'h0) begin
@@ -482,7 +507,21 @@ module vic20 (
      end
    end
 
-   video vga (
+   generate
+   if(pal == 0)
+   video
+   // timings for NTSC 60 Hz with clk_vga 25 MHz
+   #(
+    .HA(640),
+    .HFP(16),
+    .HS(96),
+    .HBP(48),
+    .VA(480),
+    .VFP(11),
+    .VS(2),
+    .VBP(31)
+   )
+   vga (
      .clk(clk_vga),
      .vga_r(red),
      .vga_g(green),
@@ -506,6 +545,45 @@ module vic20 (
      .cols(r_cols),
      .rows(r_rows)
    );
+
+   if(pal == 1)
+   video
+   // timings for PAL 50 Hz with clk_vga 27 MHz
+   #(
+    .HA(720),
+    .HFP(12),
+    .HS(64),
+    .HBP(68),
+    .VA(576),
+    .VFP(5),
+    .VS(5),
+    .VBP(39)
+   )
+   vga (
+     .clk(clk_vga),
+     .vga_r(red),
+     .vga_g(green),
+     .vga_b(blue),
+     .vga_de(vga_de),
+     .vga_hs(hsync),
+     .vga_vs(vsync),
+     .vga_addr(vga_addr),
+     .vga_data(vid_out),
+     .raster_line(raster_line),
+     .screen_addr(r_screen_addr),
+     .char_rom_addr(r_char_rom_addr),
+     .color_ram_addr(r_color_ram_addr),
+     .border_color(r_border_color),
+     .back_color(r_back_color),
+     .inverted(r_inverted),
+     .chars8x16(r_chars8x16),
+     .aux_color(r_aux_color),
+     .xorigin(r_xorigin),
+     .yorigin(r_yorigin),
+     .cols(r_cols),
+     .rows(r_rows)
+   );
+   endgenerate
 
    // ===============================================================
    // SPI Slave for OSD display
@@ -561,7 +639,7 @@ module vic20 (
    reg        led7;
    reg        led8;
 
-   always @(posedge clk25)
+   always @(posedge clk_vga)
      begin
         led1 <= !via2_irq_n;  // red
         led2 <= !via1_nmi_n;  // yellow
