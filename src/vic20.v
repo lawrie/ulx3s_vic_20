@@ -369,7 +369,6 @@ module vic20
       .I_P2_H(via1_clken),
       .RESET_L(!reset),
       .ENA_4(via4_clken),
-      //.ENA_4(1),
       .CLK(clk_vga)
    );
 
@@ -401,7 +400,6 @@ module vic20
       .O_PB_OE_L(kbd_col_out_oe_n),
       .I_P2_H(via1_clken),
       .RESET_L(!reset),
-      //.ENA_4(1),
       .ENA_4(via4_clken),
       .CLK(clk_vga)
    );
